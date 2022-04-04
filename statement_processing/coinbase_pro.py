@@ -192,7 +192,7 @@ def load_deposits_and_withdrawals_to_db(
 
 
 def process(input_directory: str) -> None:
-    """This is the main function for the whole Coinbase statement processing.
+    """This is the main function for the whole Coinbase Pro statement processing.
 
     Args:
         input_directory: See func:`load_data_into_pandas`.
