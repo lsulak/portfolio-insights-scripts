@@ -1,24 +1,56 @@
 # Portfolio Insights Scripts
 
 This repository stores scripts that I use for my personal finance needs - they are
-part of a bigger project that I built on Google Sheets in 2021 (see below).
+part of a bigger project that I started in 2021 and is currently implemented on
+Google Sheets.
 
 ## Run Locally
 
 If you want to run the script locally, including installation
-of all dependencies, please follow these steps:
+of all dependencies, you can create and activate virtual env and install
+all necessary libraries: `./setup.sh`
 
-1. Create and activate virtual env and install dependencies: `./setup.sh`
-2. Run `python3 statement_processing_runner.py -d <directory_with_input_statements> -r <report_type>`
+Then run one of the main CLI scripts on the top-directory level.
+Each of them implements parameter `--help`.
+
+## Brokerage Report Parsing
+
+The goal of most of the scripts in this repository is to process and reshape the reports exported
+from a brokerage accounts I use into a consumable way that could be imported into the main tool,
+the Personal Finance Google Sheet (see below). This tool is driven by a few input sheets;
+the most important one is called *Transactions* and most of the calculations are based on it.
+
+My typical flow is the following:
+
+1. Log into each brokerage account I use and manually export activity statements from recent time period.
+
+1. Run the script `statement_runner.py` and provide the statements exported from the previous step.
+
+1. Copy-paste resulting data from the previous step into the main tool's sheet *Transactions*.
+
+### Supported Platforms
+
+Scripts implemented in this repository load, re-shape and enhance the data into a way that it's consumable
+by the main tool. The input data is always a directory with the report statement(s), manually exported directly from
+a given platform. It's usually one or more CSV files per brokerage/platform.
+
+Supported platforms:
+
+* Coinbase
+* Coinbase Pro (TODO)
+* IBKR (TODO)
+* Revolut (TODO)
 
 ## Personal Finance Google Sheet
 
 The motivation here is to have a unified view on an individual's personal finances using
 a tool that is fully open-sourced, free, and doesn't establish a direct connection to
 your brokerage systems.
+
 This functionality is especially useful if you use multiple brokers/platforms and your
 portfolio is diversified across many asset categories such as stocks, crypto, gold, cash reserves,
 etc. Furthermore, it supports many practical features, but more on that later.
+
 
 ### How It Started?
 
@@ -56,11 +88,29 @@ Other features include portfolio tracking through a lot of graphs and tables, po
 comparison against benchmarks (e.g. ETFs representing an index, such as S&P500 or QQQ),
 dividend tracker, and much more. All world currencies are supported.
 
-See a few screenshots of the whole project below. If you found this interesting,
-don't hesitate to reach out here: <u><a href="mailto:laco.sulak@gmail.com">laco.sulak@gmail.com</a></u>.
+### Screenshots
 
-![An example of net worth assumptions, tracking, and future projection.](screens/net_worth_future_projection.png)
+See a few screenshots of the whole project below.
 
-![An example of securities & crypto tracking.](screens/securities_and_crypto.png)
+**An example of net worth assumptions, tracking, and future projection**
 
-![Everything is driven by transaction log.](screens/transactions.png)
+<img src="screens/net_worth_future_projection.png" width="800">
+
+---
+
+**An example of securities & crypto tracking**
+
+<img src="screens/securities_and_crypto.png" width="800">
+
+---
+
+**Most of the calculations are driven by a transaction log**
+
+<img src="screens/transactions.png" width="800">
+
+---
+
+## Author
+
+If you found this interesting, don't hesitate to reach out here:
+<u><a href="mailto:laco.sulak@gmail.com">laco.sulak@gmail.com</a></u>.
