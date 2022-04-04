@@ -1,0 +1,9 @@
+# CI related
+black
+flake8
+flake8-isort
+pylint
+
+# CD/Production related
+pandas
+currencies
