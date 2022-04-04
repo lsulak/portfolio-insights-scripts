@@ -25,6 +25,8 @@ enable=all
 disable=
     I,
     invalid-name,  # too strict check
+    duplicate-code,  # too strict check for now
+    no-absolute-import,
 
 [FORMAT]
 expected-line-ending-format=LF
