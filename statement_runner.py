@@ -15,7 +15,7 @@ from glob import glob
 from pathlib import Path
 
 import statement_processing
-from statement_processing.constants import LOGGING_CONF, DATA_DIR
+from statement_processing.constants import DATA_DIR, LOGGING_CONF
 from statement_processing.db_definitions import create_tables
 
 

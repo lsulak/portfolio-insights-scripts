@@ -41,13 +41,13 @@ import logging.config
 import pstats
 import re
 import sqlite3
-from hashlib import md5
 from collections import defaultdict
+from hashlib import md5
 from typing import Dict, List, Tuple
 
 import pandas as pd
 
-from .constants import DATA_DIR, IBKRReportsProcessingConst, DBConstants
+from .constants import DATA_DIR, DBConstants, IBKRReportsProcessingConst
 
 T_AGGREGATED_RAW_DATA = Dict[Tuple[str, str], List[str]]
 T_SEMI_PROCESSED_DATA = Dict[str, pd.DataFrame]
@@ -170,13 +170,15 @@ def preprocess_data(
 
         # Some reports can have missing columns. Maybe a user didn't export transaction
         # fees - maybe there were no such fees - so we accept such statements here.
-        missing_cols = set(IBKRReportsProcessingConst.COLUMNS_TO_GET[section_name].keys()) - set(prefiltered_data.columns)
+        missing_cols = set(IBKRReportsProcessingConst.COLUMNS_TO_GET[section_name].keys()) - set(
+            prefiltered_data.columns
+        )
         for missing_col in missing_cols:
             prefiltered_data[missing_col] = None
 
         for col_name, col_type in IBKRReportsProcessingConst.COLUMNS_TO_GET[section_name].items():
             if col_type == float and prefiltered_data[col_name].dtype != float:
-                prefiltered_data[col_name] = prefiltered_data[col_name].str.replace(',', '')
+                prefiltered_data[col_name] = prefiltered_data[col_name].str.replace(",", "")
 
         prefiltered_data = prefiltered_data.astype(
             IBKRReportsProcessingConst.COLUMNS_TO_GET[section_name]
@@ -400,15 +402,13 @@ def load_dividends_to_db(
     )
 
     input_dividends["Item"] = input_dividends["Description"].apply(
-        lambda x: re.match(
-            IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()
-        ).group(1)
+        lambda x: re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(
+            1
+        )
     )
     input_dividends["PPU"] = input_dividends["Description"].apply(
         lambda x: float(
-            re.match(
-                IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()
-            ).group(2)
+            re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(2)
         )
     )
     # sqlite_conn.execute("DROP TABLE tmp_table_dividends")
@@ -434,7 +434,7 @@ def load_dividends_to_db(
 
     print(input_dividends)
     print(input_taxes)
-    #return
+    # return
     sqlite_conn.execute(
         f"""
         WITH records_to_insert AS (
@@ -476,7 +476,6 @@ def load_dividends_to_db(
     sqlite_conn.execute("DROP TABLE tmp_table_div_taxes")
 
     sqlite_conn.commit()
-
 
 
 def enrich_data(input_data: T_SEMI_PROCESSED_DATA) -> T_PROCESSED_DATA:
@@ -589,7 +588,9 @@ def process(input_directory: str) -> None:
 
     with sqlite3.connect(f"{DBConstants.STATEMENTS_DB}") as connection:
         try:
-            load_deposits_and_withdrawals_to_db(connection, semi_processed_data["Deposits & Withdrawals"])
+            load_deposits_and_withdrawals_to_db(
+                connection, semi_processed_data["Deposits & Withdrawals"]
+            )
             load_forex_transactions_to_db(connection, semi_processed_data["Trades"])
             load_special_fees_to_db(connection, semi_processed_data["Fees"])
         except Exception as err:
@@ -598,7 +599,11 @@ def process(input_directory: str) -> None:
                 f"The processing of {__name__} wasn't successful. Further details:\n{err}",
             ) from err
 
-        load_stock_transactions_to_db(connection, semi_processed_data["Trades"], semi_processed_data["Transaction Fees"])
-        load_dividends_to_db(connection, semi_processed_data["Dividends"], semi_processed_data["Withholding Tax"])
+        load_stock_transactions_to_db(
+            connection, semi_processed_data["Trades"], semi_processed_data["Transaction Fees"]
+        )
+        load_dividends_to_db(
+            connection, semi_processed_data["Dividends"], semi_processed_data["Withholding Tax"]
+        )
 
     logger.info("The processing of %s just finished.", __name__)

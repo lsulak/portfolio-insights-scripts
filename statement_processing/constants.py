@@ -34,6 +34,7 @@ LOGGING_CONF = {
 
 DEFAULT_COINBASE_PORTFOLIO_CURRENCY = "GBP"
 
+
 class DBConstants:  # pylint: disable=too-few-public-methods
     """This class holds all constants related to the final database (tables, db location, etc)
     that this project builds.
@@ -81,15 +82,27 @@ class IBKRReportsProcessingConst:  # pylint: disable=too-few-public-methods
             "Amount": float,
         },
         "Deposits & Withdrawals": {
-            "Currency": str, "Settle Date": str, "Amount": float,
-            },
+            "Currency": str,
+            "Settle Date": str,
+            "Amount": float,
+        },
         "Fees": {
-            "Subtitle": str, "Currency": str, "Date": str, "Description": str, "Amount": float,
-            },
+            "Subtitle": str,
+            "Currency": str,
+            "Date": str,
+            "Description": str,
+            "Amount": float,
+        },
         "Dividends": {
-            "Currency": str, "Date": str, "Description": str, "Amount": float,
-            },
+            "Currency": str,
+            "Date": str,
+            "Description": str,
+            "Amount": float,
+        },
         "Withholding Tax": {
-            "Currency": str, "Date": str, "Description": str, "Amount": float,
-            },
+            "Currency": str,
+            "Date": str,
+            "Description": str,
+            "Amount": float,
+        },
     }
