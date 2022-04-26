@@ -12,9 +12,10 @@ import importlib
 import logging.config
 import os
 from glob import glob
+from pathlib import Path
 
 import statement_processing
-from statement_processing.constants import LOGGING_CONF
+from statement_processing.constants import LOGGING_CONF, DATA_DIR
 from statement_processing.db_definitions import create_tables
 
 
@@ -64,6 +65,7 @@ if __name__ == "__main__":
         f"{statement_processing.__name__}.{cli_args.report_type}"
     )
 
+    Path(DATA_DIR).mkdir(exist_ok=True)
     create_tables()
     processing_function = getattr(imported_processing_module, "process")
     processing_function(cli_args.directory)

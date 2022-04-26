@@ -38,20 +38,37 @@ functionality might be implemented in the future though.
 import glob
 import io
 import logging.config
+import pstats
 import re
+import sqlite3
+from hashlib import md5
 from collections import defaultdict
-from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import pandas as pd
 
-from .constants import DATA_DIR, IBKRReportsProcessingConst
+from .constants import DATA_DIR, IBKRReportsProcessingConst, DBConstants
 
-T_AGGREGATED_RAW_DATA = Dict[str, List[str]]
+T_AGGREGATED_RAW_DATA = Dict[Tuple[str, str], List[str]]
 T_SEMI_PROCESSED_DATA = Dict[str, pd.DataFrame]
 T_PROCESSED_DATA = Dict[str, pd.DataFrame]
 
 logger = logging.getLogger(__name__)
+
+IS_DIGIT = re.compile(r"^\d+(?:[,.]\d*)?$")
+
+
+def custom_hash_func(row):
+    row_as_str = ""
+    for col in row:
+        col_as_str = str(col)
+
+        if IS_DIGIT.match(col_as_str):
+            row_as_str += str(round(float(col), 4))
+        else:
+            row_as_str += col_as_str
+
+    return md5(row_as_str.encode("utf-8")).hexdigest()
 
 
 def aggregate_input_files(input_directory: str) -> T_AGGREGATED_RAW_DATA:
@@ -69,7 +86,7 @@ def aggregate_input_files(input_directory: str) -> T_AGGREGATED_RAW_DATA:
         (these are individual lines from the input CSV from the IBKR).
     """
     split_files = defaultdict(list)
-    skipped_sections = set()
+    skipped_sections = {}
 
     for input_file in glob.glob(f"{input_directory}/*.csv"):
         logger.info("Going to load the following file: %s", input_file)
@@ -80,23 +97,27 @@ def aggregate_input_files(input_directory: str) -> T_AGGREGATED_RAW_DATA:
 
             for line in input_filehandler:
                 line_items = line.split(",")
+
                 section_name = line_items[0].strip()
+                if line_items[1].strip() == "Header":
+                    section_hash = md5(line.encode("utf-8")).hexdigest()
 
                 if section_name not in IBKRReportsProcessingConst.COLUMNS_TO_GET.keys():
-                    skipped_sections.add(section_name)
+                    skipped_sections[section_hash] = line
                     continue
 
-                split_files[section_name].append(line)
+                split_files[(section_name, section_hash)].append(line)
 
     if skipped_sections:
         logger.info(
-            "The following sections were skipped from all the CSV reports: %s", skipped_sections
+            "The following sections were skipped from all the CSV reports:\n%s",
+            "\n".join(skipped_sections.values()),
         )
 
     return split_files
 
 
-def prefilter_data(
+def preprocess_data(
     input_data: T_AGGREGATED_RAW_DATA, remove_totals: bool = True
 ) -> T_SEMI_PROCESSED_DATA:
     """Process sections (=report types) sequentially, and store data items only
@@ -113,8 +134,8 @@ def prefilter_data(
         Duplicates are not desired because the final portfolio value wouldn't be precise.
 
     Args:
-        input_data: see the return value of :func:`aggregate_input_files`.
-        remove_totals: the input IBKR report actually contains more than just
+        input_data: See the return value of :func:`aggregate_input_files`.
+        remove_totals: The input IBKR report actually contains more than just
             individual data. It contains various 'totals' records, e.g. summaries
             of Buys for particular stock. These are not needed, but we can
             optionally keep them for debugging purposes.
@@ -124,16 +145,19 @@ def prefilter_data(
         pre-filtered and de-duplicated data as a dictionary that holds Pandas
         Dataframes.
     """
-    all_dfs = {}
+    all_dfs = defaultdict(pd.DataFrame)
 
-    for section_name, section_content in input_data.items():
-        logger.info("Going to prefilter data from the section: %s", section_name)
+    for (section_name, section_hash), section_content in input_data.items():
+        logger.info(
+            "Going to preprocess and prefilter data from the section: %s (hash: %s)",
+            section_name,
+            section_hash,
+        )
 
-        section_as_df = pd.read_csv(
-            io.StringIO("".join(section_content)), on_bad_lines="skip"
-        )  # TODO there are bad lines?
+        section_as_df = pd.read_csv(io.StringIO("".join(section_content)))
+
         prefiltered_data = section_as_df.query('Header == "Data"').filter(
-            items=IBKRReportsProcessingConst.COLUMNS_TO_GET[section_name]
+            items=IBKRReportsProcessingConst.COLUMNS_TO_GET[section_name].keys()
         )
 
         if remove_totals:
@@ -142,9 +166,317 @@ def prefilter_data(
             idx_of_totals = prefiltered_data.iloc[:, 0].str.contains("^Total.*$", na=False)
             prefiltered_data = prefiltered_data[~idx_of_totals]
 
-        all_dfs[section_name] = prefiltered_data.drop_duplicates()
+        prefiltered_data.columns = prefiltered_data.columns.str.replace(" ", "")
+
+        # Some reports can have missing columns. Maybe a user didn't export transaction
+        # fees - maybe there were no such fees - so we accept such statements here.
+        missing_cols = set(IBKRReportsProcessingConst.COLUMNS_TO_GET[section_name].keys()) - set(prefiltered_data.columns)
+        for missing_col in missing_cols:
+            prefiltered_data[missing_col] = None
+
+        for col_name, col_type in IBKRReportsProcessingConst.COLUMNS_TO_GET[section_name].items():
+            if col_type == float and prefiltered_data[col_name].dtype != float:
+                prefiltered_data[col_name] = prefiltered_data[col_name].str.replace(',', '')
+
+        prefiltered_data = prefiltered_data.astype(
+            IBKRReportsProcessingConst.COLUMNS_TO_GET[section_name]
+        )
+
+        prefiltered_data["id"] = prefiltered_data.apply(
+            lambda x: custom_hash_func(x),
+            axis=1,
+        )
+
+        all_dfs[section_name] = pd.concat(
+            [all_dfs[section_name], prefiltered_data],
+            ignore_index=True,
+        ).drop_duplicates()
 
     return all_dfs
+
+
+def load_deposits_and_withdrawals_to_db(
+    sqlite_conn: sqlite3.Connection, input_data: pd.DataFrame
+) -> None:
+
+    logger.info(
+        "Going to process deposits and withdrawals information and store it to table %s",
+        DBConstants.DEP_AND_WITHDRAWALS_TABLE,
+    )
+
+    if input_data.empty:
+        return
+
+    input_data.to_sql(
+        "tmp_table",
+        sqlite_conn,
+        index=False,
+    )
+
+    sqlite_conn.execute(
+        f"""
+        INSERT INTO {DBConstants.DEP_AND_WITHDRAWALS_TABLE}
+        SELECT id,
+            SettleDate AS Date,
+            CASE
+                WHEN Amount > 0 THEN 'Deposit'
+                ELSE 'Withdrawal'
+            END AS Type,
+            Currency,
+            ROUND(Amount, 2) AS Amount
+        FROM tmp_table
+    ORDER BY Date
+
+            -- Overlapping statements or processing of the same input file
+            -- twice is all allowed. But duplicates are not allowed.
+            ON CONFLICT(id) DO NOTHING
+        """
+    )
+    sqlite_conn.execute("DROP TABLE tmp_table")
+    sqlite_conn.commit()
+
+
+def load_forex_transactions_to_db(
+    sqlite_conn: sqlite3.Connection, input_data: pd.DataFrame
+) -> None:
+    logger.info(
+        "Going to process Forex information and store it to table %s",
+        DBConstants.FOREX_TABLE,
+    )
+
+    forex_transactions = input_data.query("AssetCategory == 'Forex'")
+    if forex_transactions.empty:
+        return
+
+    forex_transactions.to_sql(
+        "tmp_table",
+        sqlite_conn,
+        index=False,
+    )
+
+    sqlite_conn.execute(
+        f"""
+        INSERT INTO {DBConstants.FOREX_TABLE}
+        SELECT id,
+                DATE(REPLACE(`Date/Time`, ',', '')) AS Date,
+                SUBSTR(Symbol, 0, 3) AS CurrencySold,
+                Currency AS CurrencyBought,
+                Symbol AS CurrencyPairCode,
+                ROUND(Quantity, 2) AS CurrencySoldUnits,
+                ROUND(`T.Price`, 2) AS PPU,
+                ROUND(ComminUSD, 2) AS Fees
+        FROM tmp_table
+    ORDER BY Date
+
+            -- Overlapping statements or processing of the same input file
+            -- twice is all allowed. But duplicates are not allowed.
+            ON CONFLICT(id) DO NOTHING
+        """
+    )
+    sqlite_conn.execute("DROP TABLE tmp_table")
+    sqlite_conn.commit()
+
+
+def load_stock_transactions_to_db(
+    sqlite_conn: sqlite3.Connection, input_transactions: pd.DataFrame, input_fees: pd.DataFrame
+) -> None:
+    logger.info(
+        "Going to process stock transactions information and store it to table %s",
+        DBConstants.TRANSACTIONS_TABLE,
+    )
+
+    stock_transactions = input_transactions.query("AssetCategory == 'Stocks'")
+    stock_transactions.to_sql(
+        "tmp_table_stocks",
+        sqlite_conn,
+        index=False,
+    )
+
+    input_fees.to_sql(
+        "tmp_table_tran_fees",
+        sqlite_conn,
+        index=False,
+    )
+
+    sqlite_conn.execute(
+        f"""
+        WITH records_to_insert AS (
+
+             SELECT DISTINCT
+                    stocks.id,
+                    DATE(REPLACE(stocks.`Date/Time`, ',', '')) AS Date,
+                    CASE
+                        WHEN stocks.Quantity > 0 THEN 'BUY'
+                        ELSE 'SELL'
+                    END AS Type,
+                    stocks.Symbol AS Item,
+                    ROUND(stocks.Quantity, 2) AS Units,
+                    stocks.Currency,
+                    ROUND(stocks.`T.Price`, 2) AS PPU,
+                    ROUND(stocks.`Comm/Fee`, 2) AS Fees,
+                    ROUND(COALESCE(t_fees.Amount, 0), 2) as Taxes,
+                    1.0 AS StockSplitRatio,
+                    COALESCE(t_fees.Description, '') AS Remarks
+
+               FROM tmp_table_stocks AS stocks
+
+          LEFT JOIN tmp_table_tran_fees AS t_fees
+                 ON stocks.Symbol = t_fees.Symbol
+                AND stocks.`Date/Time` = t_fees.`Date/Time`
+                AND stocks.Quantity = t_fees.Quantity
+                AND stocks.`T.Price` = t_fees.TradePrice
+
+           ORDER BY stocks.`Date/Time`
+        )
+
+        INSERT INTO {DBConstants.TRANSACTIONS_TABLE}
+
+        SELECT * FROM records_to_insert WHERE true
+
+            -- Overlapping statements or processing of the same input file
+            -- twice is all allowed. But duplicates are not allowed.
+            ON CONFLICT(id) DO NOTHING
+        """
+    )
+
+    sqlite_conn.execute("DROP TABLE tmp_table_stocks")
+    sqlite_conn.execute("DROP TABLE tmp_table_tran_fees")
+
+    sqlite_conn.commit()
+
+
+def load_special_fees_to_db(
+    sqlite_conn: sqlite3.Connection, input_data: T_SEMI_PROCESSED_DATA
+) -> None:
+    logger.info(
+        "Going to process special fees transactions information and store it to table %s",
+        DBConstants.TRANSACTIONS_TABLE,
+    )
+
+    input_data.to_sql(
+        "tmp_table",
+        sqlite_conn,
+        index=False,
+    )
+
+    sqlite_conn.execute(
+        f"""
+        INSERT INTO {DBConstants.TRANSACTIONS_TABLE}
+
+            SELECT DISTINCT
+                   id,
+                   Date,
+                   'FEES' AS Type,
+                   'IBKR Fee' AS Item,
+                   0.0 AS Units,
+                   Currency,
+                   0.0 PPU,
+                   ROUND(Amount, 2) AS Fees,
+                   '' AS Taxes,
+                   1.0 AS StockSplitRatio,
+                   '' AS Remarks
+
+                FROM tmp_table
+
+            ORDER BY Date
+
+            -- Overlapping statements or processing of the same input file
+            -- twice is all allowed. But duplicates are not allowed.
+            ON CONFLICT(id) DO NOTHING
+        """
+    )
+
+    sqlite_conn.execute("DROP TABLE tmp_table")
+    sqlite_conn.commit()
+
+
+def load_dividends_to_db(
+    sqlite_conn: sqlite3.Connection, input_dividends: pd.DataFrame, input_taxes: pd.DataFrame
+) -> None:
+    # TODO! Groupnut oba datasety a vymazat duplikaty!
+    logger.info(
+        "Going to process dividend information and store it to table %s",
+        DBConstants.TRANSACTIONS_TABLE,
+    )
+
+    input_dividends["Item"] = input_dividends["Description"].apply(
+        lambda x: re.match(
+            IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()
+        ).group(1)
+    )
+    input_dividends["PPU"] = input_dividends["Description"].apply(
+        lambda x: float(
+            re.match(
+                IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()
+            ).group(2)
+        )
+    )
+    # sqlite_conn.execute("DROP TABLE tmp_table_dividends")
+    # sqlite_conn.execute("DROP TABLE tmp_table_div_taxes")
+    input_dividends.to_sql(
+        "tmp_table_dividends",
+        sqlite_conn,
+        index=False,
+    )
+
+    input_taxes["PPU"] = input_taxes["Description"].apply(
+        lambda x: float(re.match(r".+?Cash Dividend .+ ([0-9.]+) per", x.strip()).group(1))
+    )
+    input_taxes["Item"] = input_taxes["Description"].apply(
+        lambda x: re.match(r".+?\(", x.strip()).group()[:-1]
+    )
+
+    input_taxes.to_sql(
+        "tmp_table_div_taxes",
+        sqlite_conn,
+        index=False,
+    )
+
+    print(input_dividends)
+    print(input_taxes)
+    #return
+    sqlite_conn.execute(
+        f"""
+        WITH records_to_insert AS (
+             SELECT DISTINCT
+                    div.id,
+                    div.Date,
+                    'DIVIDENDS' AS Type,
+                    div.Item,
+                    ROUND(div.Amount / div.PPU, 2) AS Units,
+                    div.Currency,
+                    ROUND(div.PPU, 2) AS PPU,
+                    0 AS Fees,
+                    ROUND(COALESCE(tax.Amount, 0), 2) as Taxes,
+                    1.0 AS StockSplitRatio,
+                    '' AS Remarks
+
+               FROM tmp_table_dividends AS div
+
+          LEFT JOIN tmp_table_div_taxes AS tax
+                 ON div.Currency = tax.Currency
+                AND div.Date = tax.Date
+                AND div.PPU = tax.PPU
+                AND div.Item = tax.Item
+
+           ORDER BY div.date
+        )
+
+        INSERT INTO {DBConstants.TRANSACTIONS_TABLE}
+
+        SELECT * FROM records_to_insert WHERE true
+
+            -- Overlapping statements or processing of the same input file
+            -- twice is all allowed. But duplicates are not allowed.
+            ON CONFLICT(id) DO NOTHING
+        """
+    )
+
+    sqlite_conn.execute("DROP TABLE tmp_table_dividends")
+    sqlite_conn.execute("DROP TABLE tmp_table_div_taxes")
+
+    sqlite_conn.commit()
+
 
 
 def enrich_data(input_data: T_SEMI_PROCESSED_DATA) -> T_PROCESSED_DATA:
@@ -168,67 +500,8 @@ def enrich_data(input_data: T_SEMI_PROCESSED_DATA) -> T_PROCESSED_DATA:
     all_dfs = {}
 
     for section_name, curr_df in input_data.items():
-        curr_df.columns = curr_df.columns.str.replace(" ", "")
 
-        if section_name == "Deposits & Withdrawals":
-            curr_df.rename(columns={"SettleDate": "Date"}, inplace=True)
-
-            all_dfs[section_name] = curr_df
-            continue
-
-        curr_df["StockSplitRatio"] = float(1)  # This is a default value.
-
-        if section_name == "Trades":
-            curr_df.rename(columns={"Date/Time": "Date"}, inplace=True)
-            curr_df["Date"] = pd.to_datetime(curr_df["Date"]).dt.date
-
-            curr_df["Type"] = (
-                curr_df["Quantity"]
-                .str.replace(",", "")
-                .astype(float)
-                .apply(lambda x: "BUY" if x > 0 else "SELL")
-            )
-
-            curr_df.rename(
-                columns={
-                    "T.Price": "PPU",
-                    "Comm/Fee": "Fees",
-                    "Quantity": "Units",
-                    "Symbol": "Item",
-                },
-                inplace=True,
-            )
-            curr_df["PPU"] = curr_df["PPU"].astype(float)
-
-            forex_transactions = curr_df.query("AssetCategory == 'Forex'")
-            stock_transactions = curr_df.query("AssetCategory == 'Stocks'")
-
-            all_dfs["Forex"] = forex_transactions.drop(columns=["AssetCategory"])
-            all_dfs["Stocks"] = stock_transactions.drop(columns=["AssetCategory"])
-
-        elif section_name == "Transaction Fees":
-            curr_df.rename(columns={"Date/Time": "Date"}, inplace=True)
-            curr_df["Date"] = pd.to_datetime(curr_df["Date"]).dt.date
-
-            curr_df.rename(
-                columns={"Quantity": "Units", "TradePrice": "PPU", "Description": "Remarks"},
-                inplace=True,
-            )
-            curr_df["PPU"] = curr_df["PPU"].astype(float)
-
-            fees_as_tax_validation = curr_df.query("Remarks != 'UK Stamp Tax'")
-            if not fees_as_tax_validation.empty:
-                raise Exception(
-                    f"The {section_name} records contain fees that are not related to "
-                    f"the UK Stamp Tax. It's possible that the script needs to be extended. "
-                    f"Please investigate:\n{fees_as_tax_validation}"
-                )
-
-            curr_df.rename(columns={"Amount": "Taxes", "Symbol": "Item"}, inplace=True)
-
-            all_dfs[section_name] = curr_df.drop(columns=["AssetCategory"])
-
-        elif section_name == "Withholding Tax":
+        if section_name == "Withholding Tax":
             curr_df["Amount"] = pd.to_numeric(curr_df["Amount"])
             curr_df["PPU"] = curr_df["Description"].apply(
                 lambda x: float(re.match(r".+?Cash Dividend .+ ([0-9.]+) per", x.strip()).group(1))
@@ -300,90 +573,7 @@ def enrich_data(input_data: T_SEMI_PROCESSED_DATA) -> T_PROCESSED_DATA:
             curr_df["Fees"] = float(0)
             all_dfs[section_name] = curr_df
 
-        elif section_name == "Fees":
-            curr_df["Date"] = pd.to_datetime(curr_df["Date"]).dt.date
-
-            curr_df["Fees"] = curr_df["Amount"].astype(float)
-            curr_df.rename(columns={"Description": "Remarks"}, inplace=True)
-
-            curr_df.drop(columns=["Subtitle", "Amount"], inplace=True)
-
-            curr_df["Item"] = str("IBKR Fee")
-            curr_df["Type"] = str("FEES")
-            curr_df["Units"] = float(0)
-            curr_df["PPU"] = float(0)
-
-            # Sometimes there are 'false positives' - we received a fee payment and
-            # then it was reverted. So we only care about the real, materialized, fees.
-            columns_to_group_by = list(curr_df.columns)
-            columns_to_group_by.remove("Fees")
-            aggregated_df = curr_df.groupby(by=list(columns_to_group_by)).sum()
-            aggregated_df = aggregated_df.query("Fees != 0").reset_index()
-
-            all_dfs[section_name] = aggregated_df
-
     return all_dfs
-
-
-def construct_securities_transactions(securities_transactions: T_PROCESSED_DATA) -> pd.DataFrame:
-    """This function joins/merges the following individual reports into
-    financial transactions related to securities (bonds, stocks, etc):
-    * Dividends
-    * (optional) Withholding Tax: based on our observation,
-        these records are related to dividends
-    * Stocks
-    * (optional) Transaction Fees: based on our observation,
-        these records are related to stocks
-
-    Args:
-        securities_transactions: see the output of function :func:`customize_data`
-
-    Returns:
-        A single dataframe that contains all transactions. It is reshaped so that
-        a user can see a nice, consolidated view, ordered by the date of transaction.
-
-    Raises:
-        Exception: if there are duplicates in the final dataset.
-    """
-    logger.info("Going to construct the securities transactions.")
-
-    if "Withholding Tax" not in securities_transactions:
-        final_dividends_df = securities_transactions["Dividends"]
-    else:
-        final_dividends_df = securities_transactions["Dividends"].merge(
-            securities_transactions["Withholding Tax"],
-            how="left",
-            on=["Currency", "Date", "StockSplitRatio", "PPU", "Item", "Type", "Fees"],
-        )
-    final_dividends_df["Remarks"] = str()
-
-    if "Transaction Fees" not in securities_transactions:
-        final_transactions_df = securities_transactions["Stocks"]
-    else:
-        final_transactions_df = securities_transactions["Stocks"].merge(
-            securities_transactions["Transaction Fees"],
-            how="left",
-            on=["Currency", "Date", "Item", "Units", "StockSplitRatio", "PPU"],
-        )
-
-    final_dataset = (
-        final_dividends_df.append(final_transactions_df)
-        .append(securities_transactions["Fees"])
-        .sort_values(by="Date")
-    )
-
-    duplicated_records = final_dataset.duplicated(
-        ["Item", "Date", "Type", "Units"],
-        keep=False,
-    )
-    duplicates_validation = final_dataset[duplicated_records]
-    if not duplicates_validation.empty:
-        raise Exception(
-            f"There are duplicates in the final dataset with transactions. "
-            f"Please investigate:\n{duplicates_validation}"
-        )
-
-    return final_dataset
 
 
 def process(input_directory: str) -> None:
@@ -395,20 +585,20 @@ def process(input_directory: str) -> None:
     logger.info("The processing of %s just started.", __name__)
 
     input_data_by_section = aggregate_input_files(input_directory)
-    semi_processed_data = prefilter_data(input_data_by_section)
-    processed_data = enrich_data(semi_processed_data)
+    semi_processed_data = preprocess_data(input_data_by_section)
 
-    forex_to_exp = processed_data.pop("Forex")
-    dep_and_withdrawals_to_exp = processed_data.pop("Deposits & Withdrawals")
-    securities_to_exp = construct_securities_transactions(processed_data)
+    with sqlite3.connect(f"{DBConstants.STATEMENTS_DB}") as connection:
+        try:
+            load_deposits_and_withdrawals_to_db(connection, semi_processed_data["Deposits & Withdrawals"])
+            load_forex_transactions_to_db(connection, semi_processed_data["Trades"])
+            load_special_fees_to_db(connection, semi_processed_data["Fees"])
+        except Exception as err:
+            connection.execute("DROP TABLE tmp_table")
+            raise Exception(
+                f"The processing of {__name__} wasn't successful. Further details:\n{err}",
+            ) from err
 
-    Path(DATA_DIR).mkdir(exist_ok=True)
-
-    for df_to_export, filename in (
-        (forex_to_exp, IBKRReportsProcessingConst.FOREX_CSV),
-        (dep_and_withdrawals_to_exp, IBKRReportsProcessingConst.DEP_AND_WITHDRAWALS_CSV),
-        (securities_to_exp, IBKRReportsProcessingConst.SECURITIES_TRANSACTIONS_CSV),
-    ):
-        df_to_export.to_csv(filename, index=False)
+        load_stock_transactions_to_db(connection, semi_processed_data["Trades"], semi_processed_data["Transaction Fees"])
+        load_dividends_to_db(connection, semi_processed_data["Dividends"], semi_processed_data["Withholding Tax"])
 
     logger.info("The processing of %s just finished.", __name__)

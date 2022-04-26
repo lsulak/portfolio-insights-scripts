@@ -34,7 +34,6 @@ LOGGING_CONF = {
 
 DEFAULT_COINBASE_PORTFOLIO_CURRENCY = "GBP"
 
-
 class DBConstants:  # pylint: disable=too-few-public-methods
     """This class holds all constants related to the final database (tables, db location, etc)
     that this project builds.
@@ -44,6 +43,7 @@ class DBConstants:  # pylint: disable=too-few-public-methods
 
     TRANSACTIONS_TABLE = "transactions"
     DEP_AND_WITHDRAWALS_TABLE = "deposits_and_withdrawals"
+    FOREX_TABLE = "forex"
 
 
 class IBKRReportsProcessingConst:  # pylint: disable=too-few-public-methods
@@ -60,27 +60,36 @@ class IBKRReportsProcessingConst:  # pylint: disable=too-few-public-methods
     )
 
     COLUMNS_TO_GET = {
-        "Trades": (
-            "Asset Category",
-            "Currency",
-            "Symbol",
-            "Date/Time",
-            "Quantity",
-            "T. Price",
-            "Comm/Fee",
-        ),
-        "Transaction Fees": (
-            "Asset Category",
-            "Currency",
-            "Date/Time",
-            "Symbol",
-            "Description",
-            "Quantity",
-            "Trade Price",
-            "Amount",
-        ),
-        "Deposits & Withdrawals": ("Currency", "Settle Date", "Amount"),
-        "Fees": ("Subtitle", "Currency", "Date", "Description", "Amount"),
-        "Dividends": ("Currency", "Date", "Description", "Amount"),
-        "Withholding Tax": ("Currency", "Date", "Description", "Amount"),
+        "Trades": {
+            "Asset Category": str,
+            "Currency": str,
+            "Symbol": str,
+            "Date/Time": str,
+            "Quantity": float,
+            "T. Price": float,
+            "Comm/Fee": float,
+            "Comm in USD": float,
+        },
+        "Transaction Fees": {
+            "Asset Category": str,
+            "Currency": str,
+            "Date/Time": str,
+            "Symbol": str,
+            "Description": str,
+            "Quantity": float,
+            "Trade Price": float,
+            "Amount": float,
+        },
+        "Deposits & Withdrawals": {
+            "Currency": str, "Settle Date": str, "Amount": float,
+            },
+        "Fees": {
+            "Subtitle": str, "Currency": str, "Date": str, "Description": str, "Amount": float,
+            },
+        "Dividends": {
+            "Currency": str, "Date": str, "Description": str, "Amount": float,
+            },
+        "Withholding Tax": {
+            "Currency": str, "Date": str, "Description": str, "Amount": float,
+            },
     }
