@@ -11,12 +11,13 @@ import argparse
 import importlib
 import logging.config
 import os
+import shutil
 from glob import glob
 from pathlib import Path
 
 import statement_processing
-from statement_processing.constants import DATA_DIR, LOGGING_CONF
-from statement_processing.db_definitions import create_tables
+from statement_processing.constants import DATA_OUTPUT_DIR, LOGGING_CONF
+from statement_processing.db_definitions import create_tables, db_to_excel
 
 
 def get_args():
@@ -42,6 +43,13 @@ def get_args():
         "directory you specified in the parameter -d",
         choices=statement_processing.__dict__["__all__"],
     )
+    parser.add_argument(
+        "-o",
+        "--overwrite",
+        default=False,
+        action="store_true",
+        help="Whether or not to overwrite all existing output data by removing all the output files and database.",
+    )
     return parser.parse_args()
 
 
@@ -65,7 +73,12 @@ if __name__ == "__main__":
         f"{statement_processing.__name__}.{cli_args.report_type}"
     )
 
-    Path(DATA_DIR).mkdir(exist_ok=True)
+    if cli_args.overwrite:
+        shutil.rmtree(DATA_OUTPUT_DIR)
+    Path(DATA_OUTPUT_DIR).mkdir(exist_ok=True)
+
     create_tables()
     processing_function = getattr(imported_processing_module, "process")
     processing_function(cli_args.directory)
+
+    db_to_excel()

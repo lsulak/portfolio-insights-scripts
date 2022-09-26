@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """This module implements definitions of tables of the final SQLite DB."""
+import os
 import sqlite3
 
-from .constants import DBConstants
+import pandas as pd
+
+from .constants import DATA_OUTPUT_DIR, DBConstants
 
 
 def create_tables() -> None:
@@ -13,49 +16,13 @@ def create_tables() -> None:
         is that a DB will be created automatically if it doesn't exist.
     """
     with sqlite3.connect(DBConstants.STATEMENTS_DB) as connection:
-        connection.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS {DBConstants.TRANSACTIONS_TABLE} (
-                id TEXT PRIMARY KEY,
-                Date DATE NOT NULL,
-                Type TEXT NOT NULL,
-                Item TEXT NOT NULL,
-                Units DOUBLE NOT NULL,
-                Currency TEXT NOT NULL,
-                PPU DOUBLE NOT NULL,
-                Fees DOUBLE NOT NULL,
-                Taxes DOUBLE NOT NULL,
-                StockSplitRatio DOUBLE NOT NULL,
-                Remarks TEXT NOT NULL
-            )
-        """
-        )
+        DBConstants.QUERIES.create_tables(connection)
 
-        connection.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS {DBConstants.DEP_AND_WITHDRAWALS_TABLE} (
-                id TEXT PRIMARY KEY,
-                Date DATE NOT NULL,
-                Type TEXT NOT NULL,
-                Currency TEXT NOT NULL,
-                Amount DOUBLE NOT NULL
-            )
-        """
-        )
 
-        connection.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS {DBConstants.FOREX_TABLE} (
-                id TEXT PRIMARY KEY,
-                Date DATE NOT NULL,
-                CurrencySold TEXT NOT NULL,
-                CurrencyBought TEXT NOT NULL,
-                CurrencyPairCode TEXT NOT NULL,
-                CurrencySoldUnits DOUBLE NOT NULL,
-                PPU DOUBLE NOT NULL,
-                Fees DOUBLE NOT NULL
-            )
-        """
-        )
-
-        connection.commit()
+def db_to_excel():
+    with sqlite3.connect(DBConstants.STATEMENTS_DB) as connection:
+        for curr_table in DBConstants.QUERIES.list_tables(connection):
+            curr_table = curr_table[0]
+            table_df = pd.read_sql_query(f"SELECT * FROM {curr_table} ORDER BY DATE", connection)
+            table_df.drop(columns=["id"], inplace=True)
+            table_df.to_csv(os.path.join(DATA_OUTPUT_DIR, f"{curr_table}.csv"), index=False)
