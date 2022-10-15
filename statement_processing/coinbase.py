@@ -6,13 +6,13 @@ import logging
 import re
 import sqlite3
 from glob import glob
-from hashlib import md5
 from io import StringIO
 from typing import Generator
 
 import pandas as pd
 
-from .constants import DBConstants
+from .constants import DB_QUERIES
+from .database_utils import create_id_for_each_row
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def load_data(input_directory: str) -> T_INPUT_DATA_GEN:
             for line in input_file_handler:
                 if line.startswith("Timestamp,"):
                     if header_already_seen:
-                        continue  # we want to keep header just once
+                        continue  # we want to keep the CSV header just once
 
                     header_already_seen = True
                     yield line
@@ -50,7 +50,7 @@ def load_data(input_directory: str) -> T_INPUT_DATA_GEN:
 
 
 def load_data_into_pandas(input_data: T_INPUT_DATA_GEN) -> pd.DataFrame:
-    """This function loads the input data into Pandas Dataframe. It also de-duplicates the data,
+    """This function loads the input data into Pandas DataFrame. It also de-duplicates the data,
     in case that the input reports contained duplicates (for example, they could be exported
     from time period).
 
@@ -58,19 +58,14 @@ def load_data_into_pandas(input_data: T_INPUT_DATA_GEN) -> pd.DataFrame:
         input_data: See the output of the :func:`load_data`.
 
     Returns:
-        Pandas Dataframe containing de-duplicated input data with MD5
+        Pandas DataFrame containing de-duplicated input data with MD5
         hash representation of each line.
     """
     input_df = pd.read_csv(StringIO("".join(input_data)))
 
     input_df.Fees = input_df.Fees.fillna(0)
 
-    # pylint: disable=bad-builtin
-    input_df["id"] = input_df.apply(
-        lambda x: md5("".join(map(str, x)).encode("utf-8")).hexdigest(),
-        axis=1,
-    )
-    # pylint: enable=bad-builtin
+    input_df = create_id_for_each_row(input_df)
 
     input_df.columns = input_df.columns.str.replace(" ", "")
     return input_df.drop_duplicates()
@@ -83,47 +78,21 @@ def load_data_to_db(sqlite_conn: sqlite3.Connection, input_data: pd.DataFrame) -
         sqlite_conn: Already established connection to SQLite DB.
         input_data: See the output of :func:`load_data_into_pandas`.
     """
-    logger.info(
-        "Going to process the whole statement and store it to table %s",
-        DBConstants.TRANSACTIONS_TABLE,
-    )
+    logger.info("Going to process the whole statement and store it DB")
 
     input_data.to_sql("tmp_table", sqlite_conn, index=False, if_exists="replace")
 
-    sqlite_conn.execute(
-        f"""
-        INSERT INTO {DBConstants.TRANSACTIONS_TABLE}
-            SELECT id,
-                DATE(Timestamp) AS Date,
-                CASE TransactionType
-                    WHEN 'Sell' THEN 'SELL'
-                    ELSE 'BUY'
-                END AS Type,
-                Asset AS Item,
-                QuantityTransacted AS Units,
-                SpotPriceCurrency AS Currency,
-                SpotPriceatTransaction AS PPU,
-                CAST(Fees AS DOUBLE) AS Fees,
-                Notes AS Remarks
-            FROM tmp_table
+    DB_QUERIES.insert_coinbase(sqlite_conn)
 
-            -- From doc, see 'Parsing Ambiguity': https://sqlite.org/lang_upsert.html
-            WHERE TRUE
-
-            -- Overlapping statements or processing of the same input file twice
-            -- is all allowed. But duplicates are not allowed.
-            ON CONFLICT(id) DO NOTHING
-        """,
-    )
     sqlite_conn.execute("DROP TABLE tmp_table")
-    sqlite_conn.commit()
 
 
-def process(input_directory: str) -> None:
+def process(input_directory: str, output_db_location: str) -> None:
     """This is the main function for the whole Coinbase statement processing.
 
     Args:
         input_directory: See func:`load_data`.
+        output_db_location: Full path name to the output SQlite DB.
 
     Raises:
         Exception: If the processing or loading data into DB wasn't successful.
@@ -133,7 +102,7 @@ def process(input_directory: str) -> None:
     input_data = load_data(input_directory)
     semi_processed_data = load_data_into_pandas(input_data)
 
-    with sqlite3.connect(f"{DBConstants.STATEMENTS_DB}") as connection:
+    with sqlite3.connect(output_db_location) as connection:
         try:
             load_data_to_db(connection, semi_processed_data)
         except Exception as err:

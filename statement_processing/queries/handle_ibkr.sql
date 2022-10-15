@@ -8,6 +8,7 @@ INSERT INTO deposits_and_withdrawals
             END AS Type,
             Currency,
             ROUND(Amount, 4) AS Amount
+
        FROM tmp_table
 
       -- From doc, see 'Parsing Ambiguity': https://sqlite.org/lang_upsert.html
@@ -34,6 +35,7 @@ INSERT INTO forex
             ROUND(Quantity, 4) AS CurrencySoldUnits,
             ROUND(`T.Price`, 4) AS PPU,
             ROUND(ComminUSD, 4) AS Fees
+
        FROM tmp_table
    ORDER BY Date
 
@@ -112,3 +114,79 @@ SELECT *
     -- Overlapping statements or processing of the same input file
     -- twice is all allowed. But duplicates are not allowed.
     ON CONFLICT(id) DO NOTHING
+
+-- name: select_deduped_dividends_received
+-- Sometimes there can be a false positives
+-- (i.e. dividends -$10, then +$10 and then +$5, so the final would be $5).
+  SELECT MIN(id) AS id, -- doesn't matter
+         Currency,
+         Date,
+         Item,
+         PPU,
+         SUM(Amount) AS Amount
+
+    FROM tmp_table_dividends
+GROUP BY Currency, Date, Item, PPU
+
+
+
+-- name: select_deduped_dividend_taxes
+-- Sometimes there can be a false positives
+-- (i.e. tax -$10, then +$10 and then -$5, so the final would be -$5).
+  SELECT MIN(id) AS id, -- doesn't matter
+         Currency,
+         Date,
+         Item,
+         PPU,
+         SUM(Amount) AS Amount
+
+    FROM tmp_table_div_taxes
+GROUP BY Currency, Date, Item, PPU
+
+
+-- name: insert_dividend_records
+WITH records_to_insert AS (
+
+        SELECT DISTINCT
+               div.id,
+               div.Date,
+               'DIVIDENDS' AS Type,
+               div.Item,
+               ROUND(div.Amount / div.PPU, 4) AS Units,
+               div.Currency,
+               ROUND(div.PPU, 4) AS PPU,
+               0 AS Fees,
+               ROUND(COALESCE(tax.Amount, 0), 4) as Taxes,
+               1.0 AS StockSplitRatio,
+               '' AS Remarks
+
+          FROM tmp_table_deduped_dividends AS div
+
+     LEFT JOIN tmp_table_deduped_taxes AS tax
+            ON div.Currency = tax.Currency
+           AND div.Date = tax.Date
+           AND div.PPU = tax.PPU
+           AND div.Item = tax.Item
+
+     ORDER BY div.date
+)
+
+INSERT INTO transactions
+
+SELECT *
+  FROM records_to_insert
+
+ -- From doc, see 'Parsing Ambiguity': https://sqlite.org/lang_upsert.html
+ WHERE TRUE
+
+    -- Overlapping statements or processing of the same input file
+    -- twice is all allowed. But duplicates are not allowed.
+    ON CONFLICT(id) DO NOTHING
+
+
+-- name: validate_duplicit_dividend_records
+  SELECT Date, Item, PPU, COUNT(*)
+    FROM transactions
+   WHERE Type == 'DIVIDENDS'
+GROUP BY Date, Item, PPU
+  HAVING COUNT(*) > 1

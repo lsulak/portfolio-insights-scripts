@@ -1,17 +1,6 @@
 # -*- coding: utf-8 -*-
-"""This script loads and processes CSV reports, that were manually exported from the
-Interactive Brokers platform, and produces three CSV files
-(time-series data, ordered by date):
-
-* `deposits_and_withdrawals.csv`: information about deposit/withdrawals
-* `forex.csv`: currency exchange transactions
-* `securities.csv`: transaction data related to investment securities
-
-The goal of this script is to have a convenient way of loading all transactions into
-a CSV files that will be later manually imported into my personal finance sheet on Google
-Docs. I needed to have a consolidated view on the overall investment portfolio that goes
-beyond a single broker by loading and reshaping the statement(s) into a time-series data
-where each line represents a single buy/sell/dividends/fees transaction.
+"""IBKR CSV statement processing. It requires a directory of CSV reports exported from the
+platform and it outputs easy-to-consume data into SQLite database.
 
 The original IBKR CSV file actually contains a lot of sections - it almost looks like
 there is a couple of CSV files inside, because the individual 'sections' have different
@@ -46,7 +35,7 @@ from typing import Dict, List, Tuple
 
 import pandas as pd
 
-from .constants import DBConstants, IBKRReportsProcessingConst
+from .constants import DB_QUERIES, IBKRReportsProcessingConst
 
 T_AGGREGATED_RAW_DATA = Dict[Tuple[str, str], List[str]]  # { ( <section name>, <section hash> ): <data> }
 T_SEMI_PROCESSED_DATA = Dict[str, pd.DataFrame]
@@ -116,7 +105,7 @@ def aggregate_input_files(input_directory: str) -> T_AGGREGATED_RAW_DATA:
 
 def preprocess_data(input_data: T_AGGREGATED_RAW_DATA, remove_totals: bool = True) -> T_SEMI_PROCESSED_DATA:
     """Process sections (=report types) sequentially, and store data items only
-    into a dictionary of dataframes.
+    into a dictionary of DataFrames.
 
     Keep only desired columns, specified in `MAP_SECTION_TO_DESIRED_COLUMNS` and remove rows that
     do not hold data (e.g. remove 'Totals' and metadata rows).
@@ -138,7 +127,7 @@ def preprocess_data(input_data: T_AGGREGATED_RAW_DATA, remove_totals: bool = Tru
     Returns:
         This is very similar to :func:`aggregate_input_files` but it outputs
         pre-filtered and de-duplicated data as a dictionary that holds Pandas
-        Dataframes.
+        DataFrames.
     """
     all_dfs = defaultdict(pd.DataFrame)
 
@@ -201,7 +190,7 @@ def load_deposits_and_withdrawals_to_db(
 
     Args:
         sqlite_conn: Already established connection to SQLite DB.
-        deposits_and_withdrawals: Data related to deposits and withdrawals as a Pandas Dataframe.
+        deposits_and_withdrawals: Data related to deposits and withdrawals as a Pandas DataFrame.
     """
     logger.info("Going to process deposits and withdrawals information and store it to the DB")
 
@@ -210,10 +199,9 @@ def load_deposits_and_withdrawals_to_db(
 
     deposits_and_withdrawals.to_sql("tmp_table", sqlite_conn, index=False, if_exists="replace")
 
-    DBConstants.QUERIES.insert_ibkr_deposits_and_withdrawals(sqlite_conn)
+    DB_QUERIES.insert_ibkr_deposits_and_withdrawals(sqlite_conn)
 
     sqlite_conn.execute("DROP TABLE tmp_table")
-    sqlite_conn.commit()
 
 
 def load_forex_transactions_to_db(sqlite_conn: sqlite3.Connection, forex_transactions: pd.DataFrame) -> None:
@@ -221,7 +209,7 @@ def load_forex_transactions_to_db(sqlite_conn: sqlite3.Connection, forex_transac
 
     Args:
         sqlite_conn: See :func:`load_deposits_and_withdrawals_to_db`.
-        forex_transactions: Data related to forex transactions as a Pandas Dataframe.
+        forex_transactions: Data related to forex transactions as a Pandas DataFrame.
     """
     logger.info("Going to process forex transactions and store it to the DB")
 
@@ -230,10 +218,9 @@ def load_forex_transactions_to_db(sqlite_conn: sqlite3.Connection, forex_transac
 
     forex_transactions.to_sql("tmp_table", sqlite_conn, index=False, if_exists="replace")
 
-    DBConstants.QUERIES.insert_ibkr_forex(sqlite_conn)
+    DB_QUERIES.insert_ibkr_forex(sqlite_conn)
 
     sqlite_conn.execute("DROP TABLE tmp_table")
-    sqlite_conn.commit()
 
 
 def load_special_fees_to_db(sqlite_conn: sqlite3.Connection, special_fees: T_SEMI_PROCESSED_DATA) -> None:
@@ -241,48 +228,47 @@ def load_special_fees_to_db(sqlite_conn: sqlite3.Connection, special_fees: T_SEM
 
     Args:
         sqlite_conn: See :func:`load_deposits_and_withdrawals_to_db`.
-        special_fees: Data related to special fees data as a Pandas Dataframe.
+        special_fees: Data related to special fees as a Pandas DataFrame.
     """
     logger.info("Going to process special fees transactions information and store it to the DB")
 
     special_fees.to_sql("tmp_table", sqlite_conn, index=False, if_exists="replace")
 
-    DBConstants.QUERIES.insert_ibkr_special_fees(sqlite_conn)
+    DB_QUERIES.insert_ibkr_special_fees(sqlite_conn)
 
     sqlite_conn.execute("DROP TABLE tmp_table")
-    sqlite_conn.commit()
 
 
 def load_stock_transactions_to_db(
     sqlite_conn: sqlite3.Connection, stock_transactions: pd.DataFrame, transaction_fees: pd.DataFrame
 ) -> None:
-    """TODO"""
+    """This function inserts stock transactions as well as their fees into a SQLite table.
+
+    Args:
+        sqlite_conn: See :func:`load_deposits_and_withdrawals_to_db`.
+        stock_transactions: Data related to stock transactions as a Pandas DataFrame.
+        transaction_fees: Data related to transaction fees as a Pandas DataFrame.
+    """
     logger.info("Going to process stock transactions information and store it to the DB")
 
     stock_transactions.to_sql("tmp_table_stocks", sqlite_conn, index=False, if_exists="replace")
     transaction_fees.to_sql("tmp_table_tran_fees", sqlite_conn, index=False, if_exists="replace")
 
-    DBConstants.QUERIES.insert_ibkr_transactions(sqlite_conn)
+    DB_QUERIES.insert_ibkr_transactions(sqlite_conn)
 
     sqlite_conn.execute("DROP TABLE tmp_table_stocks")
     sqlite_conn.execute("DROP TABLE tmp_table_tran_fees")
-
-    sqlite_conn.commit()
 
 
 def load_dividends_to_db(
     sqlite_conn: sqlite3.Connection, input_dividends: pd.DataFrame, input_taxes: pd.DataFrame
 ) -> None:
-    """This function reshapes and enhances the data from the IBKR reports based on
-    particular business logic we need.
+    """This function inserts dividend related data into a SQLite table.
 
     Args:
-        input_data: see the output of the function :func:`put_data_into_df`.
-
-    Returns:
-        The output type is the same as the input parameter, but there were some row
-        modifications of the data (column additions & removals, changing data types,
-        grouping, filtering out irrelevant records, and more).
+        sqlite_conn: See :func:`load_deposits_and_withdrawals_to_db`.
+        input_dividends: Data related to received dividends as a Pandas DataFrame.
+        input_taxes: Data related to dividend taxes as a Pandas DataFrame.
 
     Raises:
         Exception: if there are unexpected duplicates in the dataset or situations
@@ -296,144 +282,105 @@ def load_dividends_to_db(
     input_dividends["PPU"] = input_dividends["Description"].apply(
         lambda x: float(re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(2))
     )
-    # sqlite_conn.execute("DROP TABLE tmp_table_dividends")
-    # sqlite_conn.execute("DROP TABLE tmp_table_div_taxes")
-    # sqlite_conn.execute("DROP TABLE tmp_records_to_insert")
-
-    input_dividends.to_sql("tmp_table_dividends", sqlite_conn, index=False)
-
-    input_taxes["PPU"] = input_taxes["Description"].apply(
-        lambda x: float(re.match(r".+?Cash Dividend .+ ([0-9.]+) per", x.strip()).group(1))
+    input_taxes["Item"] = input_taxes["Description"].apply(
+        lambda x: re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(1)
     )
-    input_taxes["Item"] = input_taxes["Description"].apply(lambda x: re.match(r".+?\(", x.strip()).group()[:-1])
+    input_taxes["PPU"] = input_taxes["Description"].apply(
+        lambda x: float(re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(2))
+    )
+
+    input_dividends.to_sql("tmp_table_dividends", sqlite_conn, index=False, if_exists="replace")
     input_taxes.to_sql("tmp_table_div_taxes", sqlite_conn, index=False, if_exists="replace")
 
-    records_to_insert = pd.read_sql_query(
-        f"""
-        WITH dedup_dividends AS (
-                -- Sometimes there can be a false positives
-                -- (i.e. dividends -$10, then +$10 and then -$5, so the final would be $5).
-                SELECT MIN(id) AS id, -- doesn't matter
-                       Currency,
-                       Date,
-                       Item,
-                       PPU,
-                       SUM(Amount) Amount
-                  FROM tmp_table_dividends
-              GROUP BY Currency, Date, Item, PPU
-
-            ), dedup_div_taxes AS (
-                -- Sometimes there can be a false positives
-                -- (i.e. tax -$10, then +$10 and then -$5, so the final would be $5).
-                SELECT MIN(id) AS id, -- doesn't matter
-                       Currency,
-                       Date,
-                       Item,
-                       PPU,
-                       SUM(Amount) Amount
-                  FROM tmp_table_div_taxes
-                 WHERE NOT (Item = 'STOR' AND strftime('%Y', Date) = '2021' AND Amount < 0)
-              GROUP BY Currency, Date, Item, PPU
-            )
-
-             SELECT DISTINCT
-                    div.id,
-                    div.Date,
-                    'DIVIDENDS' AS Type,
-                    div.Item,
-                    ROUND(div.Amount / div.PPU, 4) AS Units,
-                    div.Currency,
-                    ROUND(div.PPU, 4) AS PPU,
-                    0 AS Fees,
-                    ROUND(COALESCE(tax.Amount, 0), 4) as Taxes,
-                    1.0 AS StockSplitRatio,
-                    '' AS Remarks
-
-               FROM dedup_dividends AS div
-
-          LEFT JOIN dedup_div_taxes AS tax
-                 ON div.Currency = tax.Currency
-                AND div.Date = tax.Date
-                AND div.PPU = tax.PPU
-                AND div.Item = tax.Item
-
-           ORDER BY div.date
-        """,
-        sqlite_conn,
-    )
-    records_to_insert.to_sql("tmp_records_to_insert", sqlite_conn, index=False, if_exists="replace")
-
-    omg = pd.read_sql_query(
-        f"""
-        SELECT * FROM tmp_records_to_insert
-    """,
-        sqlite_conn,
-    )
-    print(omg)
-
-    multiple_dividend_records_validation = pd.read_sql_query(
-        f"""
-        SELECT Date, Type, Item, PPU, COUNT(*)
-          FROM tmp_records_to_insert
-      GROUP BY Date, Item, PPU
-        HAVING COUNT(*) > 1
-    """,
-        sqlite_conn,
+    deduped_dividends = pd.DataFrame(
+        DB_QUERIES.select_deduped_dividends_received(sqlite_conn),
+        columns=["id", "Currency", "Date", "Item", "PPU", "Amount"],
     )
 
-    if not multiple_dividend_records_validation.empty:
+    deduped_taxes = pd.DataFrame(
+        DB_QUERIES.select_deduped_dividend_taxes(sqlite_conn),
+        columns=["id", "Currency", "Date", "Item", "PPU", "Amount"],
+    )
+    no_negative_dividends_received_validation = deduped_dividends.query("Amount < 0")
+    no_positive_dividend_taxes_validation = deduped_taxes.query("Amount > 0")
+
+    if not no_negative_dividends_received_validation.empty:
         raise Exception(
-            f"There are multiple dividend records for the same ticker and "
-            f"the same day, this shouldn't happen. "
-            f"Please investigate:\n{multiple_dividend_records_validation}"
+            f"There are multiple dividend records that have negative received amount - but the dividend is "
+            f"a receivable item, it should be always positive! IBKR had this bug in the past in "
+            f"their CSV reports. Perhaps you'll need to manually correct the CSV statements. "
+            f"Please investigate:\n{no_negative_dividends_received_validation}"
         )
 
-    sqlite_conn.execute(
-        f"""
-        INSERT INTO transactions
+    if not no_positive_dividend_taxes_validation.empty:
+        raise Exception(
+            f"There are multiple dividend tax records that have positive tax amount - but the tax is "
+            f"not a receivable item, it should be always negative! IBKR had this bug in the past in "
+            f"their CSV reports. Perhaps you'll need to manually correct the CSV statements. "
+            f"Please investigate:\n{no_positive_dividend_taxes_validation}"
+        )
 
-        SELECT * FROM tmp_records_to_insert WHERE true
+    deduped_dividends.to_sql("tmp_table_deduped_dividends", sqlite_conn, index=False, if_exists="replace")
+    deduped_taxes.to_sql("tmp_table_deduped_taxes", sqlite_conn, index=False, if_exists="replace")
 
-            -- Overlapping statements or processing of the same input file
-            -- twice is all allowed. But duplicates are not allowed.
-            ON CONFLICT(id) DO NOTHING
+    duplicit_dividend_records_validation = DB_QUERIES.validate_duplicit_dividend_records(sqlite_conn)
+    if duplicit_dividend_records_validation:
+        raise Exception(
+            f"There are duplicit dividend records for the same ticker and "
+            f"the same day, this shouldn't happen. "
+            f"Please investigate:\n{duplicit_dividend_records_validation}"
+        )
+
+    for tmp_table_to_remove in (
+        "tmp_table_dividends",
+        "tmp_table_div_taxes",
+        "tmp_table_deduped_dividends",
+        "tmp_table_deduped_taxes",
+    ):
+        sqlite_conn.execute(f"DROP TABLE {tmp_table_to_remove}")
+
+
+def drop_all_tmp_tables(sqlite_conn: sqlite3.Connection) -> None:
+    """This function drops all temporary tables that are present in the DB.
+
+    Args:
+        sqlite_conn: See :func:`load_deposits_and_withdrawals_to_db`.
     """
-    )
+    logger.info("Going to drop all temporary tables.")
 
-    sqlite_conn.execute("DROP TABLE tmp_table_dividends")
-    sqlite_conn.execute("DROP TABLE tmp_table_div_taxes")
-    sqlite_conn.execute("DROP TABLE tmp_records_to_insert")
-
-    sqlite_conn.commit()
+    tables_to_drop = DB_QUERIES.list_all_tmp_tables(sqlite_conn)
+    for table_to_drop in tables_to_drop:
+        sqlite_conn.execute(f"DROP TABLE {table_to_drop[0]}")
 
 
-def process(input_directory: str) -> None:
+def process(input_directory: str, output_db_location: str) -> None:
     """This is the main function for the whole IBKR statement processing.
 
     Args:
         input_directory: See func:`aggregate_input_files`.
+        output_db_location: Full path name to the output SQlite DB.
     """
     logger.info("The processing of %s just started.", __name__)
 
     input_data_by_section = aggregate_input_files(input_directory)
     semi_processed_data = preprocess_data(input_data_by_section)
 
-    with sqlite3.connect(f"{DBConstants.STATEMENTS_DB}") as connection:
+    with sqlite3.connect(output_db_location) as connection:
         try:
             load_deposits_and_withdrawals_to_db(connection, semi_processed_data["Deposits & Withdrawals"])
             load_forex_transactions_to_db(connection, semi_processed_data["Trades"].query("AssetCategory == 'Forex'"))
             load_special_fees_to_db(connection, semi_processed_data["Fees"])
+            load_stock_transactions_to_db(
+                connection,
+                semi_processed_data["Trades"].query("AssetCategory == 'Stocks'"),
+                semi_processed_data["Transaction Fees"],
+            )
+            load_dividends_to_db(connection, semi_processed_data["Dividends"], semi_processed_data["Withholding Tax"])
+
         except Exception as err:
-            connection.execute("DROP TABLE tmp_table")
+            drop_all_tmp_tables(connection)
             raise Exception(
                 f"The processing of {__name__} wasn't successful. Further details:\n{err}",
             ) from err
-
-        load_stock_transactions_to_db(
-            connection,
-            semi_processed_data["Trades"].query("AssetCategory == 'Stocks'"),
-            semi_processed_data["Transaction Fees"],
-        )
-        load_dividends_to_db(connection, semi_processed_data["Dividends"], semi_processed_data["Withholding Tax"])
 
     logger.info("The processing of %s just finished.", __name__)
