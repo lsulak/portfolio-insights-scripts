@@ -6,4 +6,4 @@ platforms into a SQLite DB.
 """
 
 # List of modules, i.e. platforms which activity statement processing are supported.
-__all__ = ["coinbase_pro", "coinbase"]
+__all__ = ["coinbase_pro", "coinbase", "ibkr"]

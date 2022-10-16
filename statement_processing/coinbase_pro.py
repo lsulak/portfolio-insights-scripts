@@ -5,22 +5,19 @@ platform and it outputs easy-to-consume data into SQLite database.
 import logging
 import sqlite3
 from glob import glob
-from hashlib import md5
 
 import pandas as pd
 from currencies import MONEY_FORMATS
 
-from .constants import (  # isort:skip
-    DEFAULT_COINBASE_PORTFOLIO_CURRENCY,
-    DBConstants,
-)
+from .constants import DB_QUERIES
+from .database_utils import create_id_for_each_row
 
 logger = logging.getLogger(__name__)
 
 
 def load_data_into_pandas(input_directory: str) -> pd.DataFrame:
     """This function loads the CSV files from the input directory into de-duplicated
-    pandas dataframe.
+    pandas DataFrame.
 
     Data relevant to a given user (i.e. balance or portfolio ID) are removed.
 
@@ -29,7 +26,7 @@ def load_data_into_pandas(input_directory: str) -> pd.DataFrame:
             exported manually by a user.
 
     Returns:
-        Pandas Dataframe that holds all the desired data.
+        Pandas DataFrame that holds all the desired data.
     """
     all_dataframes = []
 
@@ -39,12 +36,7 @@ def load_data_into_pandas(input_directory: str) -> pd.DataFrame:
         input_df = pd.read_csv(input_file_name, index_col=None, header=0)
         input_df.drop(columns=["portfolio", "balance"], inplace=True)
 
-        # pylint: disable=bad-builtin
-        input_df["id"] = input_df.apply(
-            lambda x: md5("".join(map(str, x)).encode("utf-8")).hexdigest(),
-            axis=1,
-        )
-        # pylint: enable=bad-builtin
+        input_df = create_id_for_each_row(input_df)
 
         all_dataframes.append(input_df)
 
@@ -60,7 +52,7 @@ def process_transactions(input_data: pd.DataFrame) -> pd.DataFrame:
         input_data: See the output of :func:`load_data_into_pandas`.
 
     Returns:
-        Pandas Dataframe containing well-shaped transaction data.
+        Pandas DataFrame containing well-shaped transaction data.
     """
     logger.info("Going to process all the transaction data.")
 
@@ -70,132 +62,63 @@ def process_transactions(input_data: pd.DataFrame) -> pd.DataFrame:
     fees.Fees = abs(fees.Fees)
 
     transactions = input_data.query("type == 'match'")[:]
-    transactions.rename(columns={"amount/balanceunit": "Item"}, inplace=True)
-    transactions.Currency = DEFAULT_COINBASE_PORTFOLIO_CURRENCY
 
-    crypto_details = transactions.query(f"Item not in {list(MONEY_FORMATS.keys())}")[:]
-    crypto_details.rename(columns={"amount": "Units"}, inplace=True)
+    crypto_details = transactions.query(f"`amount/balanceunit` not in {list(MONEY_FORMATS.keys())}")[:]
+    crypto_details.rename(columns={"amount": "Units", "amount/balanceunit": "Item"}, inplace=True)
 
-    fiat_details = transactions.query(f"Item in {list(MONEY_FORMATS.keys())}")[:]
-    fiat_details.rename(columns={"Item": "Currency"}, inplace=True)
+    fiat_details = transactions.query(f"`amount/balanceunit` in {list(MONEY_FORMATS.keys())}")[:]
     fiat_details.amount = abs(fiat_details.amount)
+    fiat_details.rename(columns={"amount/balanceunit": "Currency"}, inplace=True)
 
-    aggregated_df = crypto_details.merge(
-        fiat_details, how="inner", on=["time", "type", "tradeid", "orderid"]
-    )
+    aggregated_df = crypto_details.merge(fiat_details, how="inner", on=["time", "type", "tradeid", "orderid"])
     aggregated_df["PPU"] = aggregated_df.amount.div(aggregated_df.Units.values)
     aggregated_df.type = aggregated_df.Units.apply(lambda x: "Buy" if x > 0 else "Sell")
 
-    final_transactions = aggregated_df.merge(
-        fees, how="inner", on=["time", "Currency", "tradeid", "orderid"]
-    )
+    final_transactions = aggregated_df.merge(fees, how="inner", on=["time", "Currency", "tradeid", "orderid"])
     return final_transactions
 
 
-def load_transactions_to_db(
-    sqlite_conn: sqlite3.Connection, transaction_data: pd.DataFrame
-) -> None:
+def load_transactions_to_db(sqlite_conn: sqlite3.Connection, transaction_data: pd.DataFrame) -> None:
     """This function loads the transaction data into a SQLite table.
 
     Args:
         sqlite_conn: Already established connection to SQLite DB.
         transaction_data: See the output of the :func:`process_transactions`.
     """
-    logger.info(
-        "Going to store all the transaction data into table %s",
-        DBConstants.TRANSACTIONS_TABLE,
-    )
+    logger.info("Going to store all the transaction data into the DB")
 
-    transaction_data.to_sql(
-        "tmp_table",
-        sqlite_conn,
-        index=False,
-    )
+    transaction_data.to_sql("tmp_table", sqlite_conn, index=False, if_exists="replace")
 
-    sqlite_conn.execute(
-        f"""
-        INSERT INTO {DBConstants.TRANSACTIONS_TABLE}
-        SELECT id,
-               DATE(time) AS Date,
-               Type,
-               Item,
-               Units,
-               Currency,
-               PPU,
-               Fees,
-               '' AS Remarks
-          FROM tmp_table
+    DB_QUERIES.insert_coinbase_pro_transactions(sqlite_conn)
 
-        -- From doc, see 'Parsing Ambiguity': https://sqlite.org/lang_upsert.html
-        WHERE TRUE
-
-        -- Overlapping statements or processing of the same input file twice
-        -- is all allowed. But duplicates are not allowed.
-        ON CONFLICT(id) DO NOTHING
-        """
-    )
     sqlite_conn.execute("DROP TABLE tmp_table")
-    sqlite_conn.commit()
 
 
-def load_deposits_and_withdrawals_to_db(
-    sqlite_conn: sqlite3.Connection, input_data: pd.Dataframe, include_fiat_only: bool = True
-) -> None:
+def load_deposits_and_withdrawals_to_db(sqlite_conn: sqlite3.Connection, input_data: pd.DataFrame) -> None:
     """This function identifies deposit and withdrawal events and loads them into
     a SQLite table.
 
     Args:
         sqlite_conn: See :func:`load_transactions_to_db`.
         input_data: See the output of :func:`load_data_into_pandas`.
-        include_fiat_only: Optionally you can choose to keep deposits and
-            withdrawals of Crypto currencies as well.
-            By default, only deposits & withdrawals of the fiat currencies
-            are kept.
     """
-    logger.info(
-        "Going to process deposits and withdrawals information and store it to table %s",
-        DBConstants.DEP_AND_WITHDRAWALS_TABLE,
+    logger.info("Going to process deposits and withdrawals information and store it to the DB")
+    withdrawal_data = input_data.query(
+        f"type in ('deposit', 'withdrawal') and `amount/balanceunit` in {list(MONEY_FORMATS.keys())}"
     )
+    withdrawal_data.to_sql("tmp_table", sqlite_conn, index=False, if_exists="replace")
 
-    input_data.to_sql(
-        "tmp_table",
-        sqlite_conn,
-        index=False,
-    )
+    DB_QUERIES.insert_coinbase_pro_deposits_and_withdrawals(sqlite_conn)
 
-    if include_fiat_only:
-        # pylint: disable=bad-builtin
-        printable_fiat = "('" + "','".join(map(str, MONEY_FORMATS.keys())) + "')"
-        fiat_filter = f" AND `amount/balanceunit` in {printable_fiat} "
-    else:
-        fiat_filter = ""
-
-    sqlite_conn.execute(
-        f"""
-        INSERT INTO {DBConstants.DEP_AND_WITHDRAWALS_TABLE}
-        SELECT id,
-               DATE(time) AS Date,
-               UPPER(SUBSTR(type, 1, 1)) || SUBSTR(type, 2) AS Type,
-               `amount/balanceunit` AS Currency,
-               CAST(amount AS DOUBLE) AS Amount
-          FROM tmp_table
-         WHERE type IN ('deposit', 'withdrawal') {fiat_filter}
-      ORDER BY time
-
-        -- Overlapping statements or processing of the same input file twice
-        -- is all allowed. But duplicates are not allowed.
-        ON CONFLICT(id) DO NOTHING
-        """
-    )
     sqlite_conn.execute("DROP TABLE tmp_table")
-    sqlite_conn.commit()
 
 
-def process(input_directory: str) -> None:
-    """This is the main function for the whole Coinbase statement processing.
+def process(input_directory: str, output_db_location: str) -> None:
+    """This is the main function for the whole Coinbase Pro statement processing.
 
     Args:
         input_directory: See func:`load_data_into_pandas`.
+        output_db_location: Full path name to the output SQlite DB.
 
     Raises:
         Exception: If the processing or loading data into DB wasn't successful.
@@ -205,7 +128,7 @@ def process(input_directory: str) -> None:
     input_data = load_data_into_pandas(input_directory)
     transactions_data = process_transactions(input_data)
 
-    with sqlite3.connect(f"{DBConstants.STATEMENTS_DB}") as connection:
+    with sqlite3.connect(output_db_location) as connection:
         try:
             load_transactions_to_db(connection, transactions_data)
             load_deposits_and_withdrawals_to_db(connection, input_data)

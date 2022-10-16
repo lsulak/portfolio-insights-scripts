@@ -1,5 +1,8 @@
 # Makefile for Python development & CI
 # You need: black, flake8, flake8-isort, pylint, mdl (installable via gem).
+
+BASEDIR = $(shell pwd)
+
 test: lint unit-tests
 
 venv-create:
