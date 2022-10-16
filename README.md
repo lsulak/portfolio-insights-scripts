@@ -37,9 +37,9 @@ a given platform. It's usually one or more CSV files per brokerage/platform.
 Supported platforms:
 
 * Coinbase
-* Coinbase Pro (TODO)
-* IBKR (TODO)
-* Revolut (TODO)
+* Coinbase Pro
+* IBKR (todo generate reports again! check STOR from 2021 and CDR dividends from 2021-06-08)
+* Revolut
 
 ## Personal Finance Google Sheet
 
