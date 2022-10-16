@@ -88,6 +88,7 @@ def load_transactions_to_db(sqlite_conn: sqlite3.Connection, transaction_data: p
     logger.info("Going to store all the transaction data into the DB")
 
     transaction_data.to_sql("tmp_table", sqlite_conn, index=False, if_exists="replace")
+
     DB_QUERIES.insert_coinbase_pro_transactions(sqlite_conn)
 
     sqlite_conn.execute("DROP TABLE tmp_table")
@@ -102,12 +103,12 @@ def load_deposits_and_withdrawals_to_db(sqlite_conn: sqlite3.Connection, input_d
         input_data: See the output of :func:`load_data_into_pandas`.
     """
     logger.info("Going to process deposits and withdrawals information and store it to the DB")
+    withdrawal_data = input_data.query(
+        f"type in ('deposit', 'withdrawal') and `amount/balanceunit` in {list(MONEY_FORMATS.keys())}"
+    )
+    withdrawal_data.to_sql("tmp_table", sqlite_conn, index=False, if_exists="replace")
 
-    input_data.to_sql("tmp_table", sqlite_conn, index=False, if_exists="replace")
-
-    printable_fiat = "('" + "','".join(map(str, MONEY_FORMATS.keys())) + "')"
-
-    DB_QUERIES.insert_coinbase_pro_deposits_and_withdrawals(sqlite_conn, fiat_list=printable_fiat)
+    DB_QUERIES.insert_coinbase_pro_deposits_and_withdrawals(sqlite_conn)
 
     sqlite_conn.execute("DROP TABLE tmp_table")
 

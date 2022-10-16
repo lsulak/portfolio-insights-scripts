@@ -37,6 +37,10 @@ INSERT INTO forex
             ROUND(ComminUSD, 4) AS Fees
 
        FROM tmp_table
+
+      -- From doc, see 'Parsing Ambiguity': https://sqlite.org/lang_upsert.html
+      WHERE TRUE
+
    ORDER BY Date
 
         -- Overlapping statements or processing of the same input file
@@ -46,7 +50,7 @@ INSERT INTO forex
 
 -- name: insert_ibkr_special_fees
 INSERT INTO transactions
-     SELECT DISTINCT
+   SELECT DISTINCT
           -- This is ok, even if the unique ID is not the same for records groupped by Date, Currency, and Description,
           -- any ID from the same group should uniquely represent the row (we chose MIN, but it really doesn't matter).
           MIN(id),
@@ -84,8 +88,8 @@ WITH records_to_insert AS (
                ELSE 'SELL'
           END AS Type,
           stocks.Symbol AS Item,
-          ROUND(stocks.Quantity, 4) AS Units,
           stocks.Currency,
+          ROUND(stocks.Quantity, 4) AS Units,
           ROUND(stocks.`T.Price`, 4) AS PPU,
           ROUND(stocks.`Comm/Fee`, 4) AS Fees,
           ROUND(COALESCE(t_fees.Amount, 0), 4) as Taxes,
@@ -152,8 +156,8 @@ WITH records_to_insert AS (
                div.Date,
                'DIVIDENDS' AS Type,
                div.Item,
-               ROUND(div.Amount / div.PPU, 4) AS Units,
                div.Currency,
+               ROUND(div.Amount / div.PPU, 4) AS Units,
                ROUND(div.PPU, 4) AS PPU,
                0 AS Fees,
                ROUND(COALESCE(tax.Amount, 0), 4) as Taxes,

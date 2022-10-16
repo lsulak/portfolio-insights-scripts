@@ -12,10 +12,6 @@ beyond a single broker by loading and reshaping the statement(s) into a time-ser
 where each line represents a single buy/sell/dividends/fees transaction.
 
 Note: Please see more detailed info about the usage supplied by the `--help` CLI parameter.
-
-TODO
-    * Duplicities in DB for IBKR!
-    * Deposits not loaded into DB for coinbase!
 """
 import argparse
 import importlib

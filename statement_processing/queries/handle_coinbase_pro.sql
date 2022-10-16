@@ -1,6 +1,5 @@
 -- name: insert_coinbase_pro_deposits_and_withdrawals
-WITH records_to_insert AS (
-
+INSERT INTO deposits_and_withdrawals
      SELECT id,
             DATE(time) AS Date,
             UPPER(SUBSTR(type, 1, 1)) || SUBSTR(type, 2) AS Type,
@@ -9,19 +8,10 @@ WITH records_to_insert AS (
 
        FROM tmp_table
 
-      WHERE type IN ('deposit', 'withdrawal')
-        AND `amount/balanceunit` in (:fiat_list)
+     -- From doc, see 'Parsing Ambiguity': https://sqlite.org/lang_upsert.html
+      WHERE TRUE
 
    ORDER BY time
-)
-
-INSERT INTO deposits_and_withdrawals
-
-SELECT *
-  FROM records_to_insert
-
- -- From doc, see 'Parsing Ambiguity': https://sqlite.org/lang_upsert.html
- WHERE TRUE
 
     -- Overlapping statements or processing of the same input file
     -- twice is all allowed. But duplicates are not allowed.
@@ -34,8 +24,8 @@ INSERT INTO transactions
              DATE(time) AS Date,
              Type,
              Item,
-             Units,
              Currency,
+             Units,
              PPU,
              Fees,
              .0 AS Taxes,

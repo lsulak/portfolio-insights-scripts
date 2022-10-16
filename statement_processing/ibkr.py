@@ -36,27 +36,17 @@ from typing import Dict, List, Tuple
 import pandas as pd
 
 from .constants import DB_QUERIES, IBKRReportsProcessingConst
+from .database_utils import create_id_for_each_row
+from .stocks_utils import (
+    produce_missing_exchange_prefixes_for_tickers,
+    replace_renamed_ticker_symbols,
+)
 
 T_AGGREGATED_RAW_DATA = Dict[Tuple[str, str], List[str]]  # { ( <section name>, <section hash> ): <data> }
 T_SEMI_PROCESSED_DATA = Dict[str, pd.DataFrame]
 T_PROCESSED_DATA = Dict[str, pd.DataFrame]
 
 logger = logging.getLogger(__name__)
-
-IS_DIGIT = re.compile(r"^\d+(?:[,.]\d*)?$")
-
-
-def custom_hash_func(row):
-    row_as_str = ""
-    for col in row:
-        col_as_str = str(col)
-
-        if IS_DIGIT.match(col_as_str):
-            row_as_str += str(round(float(col), 4))
-        else:
-            row_as_str += col_as_str
-
-    return md5(row_as_str.encode("utf-8")).hexdigest()
 
 
 def aggregate_input_files(input_directory: str) -> T_AGGREGATED_RAW_DATA:
@@ -168,8 +158,7 @@ def preprocess_data(input_data: T_AGGREGATED_RAW_DATA, remove_totals: bool = Tru
         prefiltered_data = prefiltered_data.astype(
             IBKRReportsProcessingConst.MAP_SECTION_TO_DESIRED_COLUMNS[section_name]
         )
-
-        prefiltered_data["id"] = prefiltered_data.apply(lambda x: custom_hash_func(x), axis=1)
+        prefiltered_data = create_id_for_each_row(prefiltered_data)
 
         # There might be multiple sections (=reports) with the same section name, but the data
         # could slightly differ (some extra columns or so) - this will merge all reports
@@ -251,6 +240,20 @@ def load_stock_transactions_to_db(
     """
     logger.info("Going to process stock transactions information and store it to the DB")
 
+    stock_transactions = stock_transactions.apply(
+        lambda x: replace_renamed_ticker_symbols(x, ticker_column="Symbol"), axis=1
+    )
+    stock_transactions = stock_transactions.apply(
+        lambda x: produce_missing_exchange_prefixes_for_tickers(x, ticker_column="Symbol"), axis=1
+    )
+
+    transaction_fees = transaction_fees.apply(
+        lambda x: replace_renamed_ticker_symbols(x, ticker_column="Symbol"), axis=1
+    )
+    transaction_fees = transaction_fees.apply(
+        lambda x: produce_missing_exchange_prefixes_for_tickers(x, ticker_column="Symbol"), axis=1
+    )
+
     stock_transactions.to_sql("tmp_table_stocks", sqlite_conn, index=False, if_exists="replace")
     transaction_fees.to_sql("tmp_table_tran_fees", sqlite_conn, index=False, if_exists="replace")
 
@@ -320,8 +323,16 @@ def load_dividends_to_db(
             f"Please investigate:\n{no_positive_dividend_taxes_validation}"
         )
 
+    deduped_dividends = deduped_dividends.apply(replace_renamed_ticker_symbols, axis=1)
+    deduped_dividends = deduped_dividends.apply(produce_missing_exchange_prefixes_for_tickers, axis=1)
+
+    deduped_taxes = deduped_taxes.apply(replace_renamed_ticker_symbols, axis=1)
+    deduped_taxes = deduped_taxes.apply(produce_missing_exchange_prefixes_for_tickers, axis=1)
+
     deduped_dividends.to_sql("tmp_table_deduped_dividends", sqlite_conn, index=False, if_exists="replace")
     deduped_taxes.to_sql("tmp_table_deduped_taxes", sqlite_conn, index=False, if_exists="replace")
+
+    DB_QUERIES.insert_dividend_records(sqlite_conn)
 
     duplicit_dividend_records_validation = DB_QUERIES.validate_duplicit_dividend_records(sqlite_conn)
     if duplicit_dividend_records_validation:

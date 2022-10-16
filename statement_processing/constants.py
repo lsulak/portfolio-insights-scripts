@@ -20,6 +20,12 @@ RENAMED_STOCKS = {
 
 MAP_STOCK_TO_EXCHANGE = {
     "WORK": "NYSE",
+    "PLNHF": "OTCMKTS",
+    "TCNNF": "OTCMKTS",
+    "SHWZ": "OTCMKTS",
+    "CDR": "WSE",
+    "AVST": "LON",
+    "GRG": "LON",
 }
 
 LOGGING_CONF = {

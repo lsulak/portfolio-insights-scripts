@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 """This module implements helper SQLite database utilities used in this project."""
 import os
+import re
 import sqlite3
 from hashlib import md5
 from pathlib import Path
 from typing import Iterable
 
+import numpy as np
 import pandas as pd
 
 from .constants import DB_QUERIES
+
+IS_DIGIT = re.compile(r"^\d+(?:[,.]\d*)?$")
 
 
 def create_tables(database_location: str) -> None:
@@ -47,6 +51,33 @@ def sqlite_tables_to_csv_files(database_location: str, output_dir: str) -> None:
             table_df.to_csv(os.path.join(output_dir, f"{curr_table}.csv"), index=False)
 
 
+def _custom_hash_func(row: pd.core.series.Series, columns_to_ignore: Iterable[str]) -> str:
+    """This function implements a deterministic hashing of a row and produces a unique hash.
+
+    Args:
+        row: Pandas DataFrame row.
+        columns_to_ignore: See :func:`create_id_for_each_row`.
+
+    Note: A column cannot have NaN or None values, the hashing wouldn't be consistent.
+        Please pre-process your DataFrame so that these values are removed or replaced
+        with some trivial (e.g. empty) string.
+    """
+    row_as_str = ""
+
+    for col in row:
+        if col in columns_to_ignore:
+            continue
+
+        col_as_str = str(col)
+
+        if IS_DIGIT.match(col_as_str):
+            row_as_str += str(round(float(col), 4))
+        else:
+            row_as_str += col_as_str
+
+    return md5(row_as_str.encode("utf-8")).hexdigest()
+
+
 def create_id_for_each_row(input_df: pd.DataFrame, id_column_name: str = "id", columns_to_ignore: Iterable[str] = None):
     """This function adds a new column into the input DataFrame. This column
     is meant to represent the unique identification of data in each row.
@@ -58,13 +89,18 @@ def create_id_for_each_row(input_df: pd.DataFrame, id_column_name: str = "id", c
 
     Returns:
         Pandas DataFrame enriched by a new column that uniquely identifies each row.
+
+    Note: It was important to substitute None and NaN values with an empty string, because
+        otherwise the hashing was not deterministic.
     """
     columns_to_ignore = columns_to_ignore if columns_to_ignore else []
 
-    # pylint: disable=bad-builtin
-    input_df[id_column_name] = input_df.apply(
-        lambda x: md5("".join(map(str, x if x not in columns_to_ignore else "")).encode("utf-8")).hexdigest(),
-        axis=1,
+    input_df[id_column_name] = (
+        input_df.replace("None", np.nan)
+        .fillna("")
+        .apply(
+            lambda x: _custom_hash_func(x, columns_to_ignore),
+            axis=1,
+        )
     )
-    # pylint: enable=bad-builtin
     return input_df
