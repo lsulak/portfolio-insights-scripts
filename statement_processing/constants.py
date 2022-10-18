@@ -22,6 +22,7 @@ MAP_STOCK_TO_EXCHANGE = {
     "WORK": "NYSE",
     "PLNHF": "OTCMKTS",
     "TCNNF": "OTCMKTS",
+    "TRUL": "CNSX",
     "SHWZ": "OTCMKTS",
     "CDR": "WSE",
     "AVST": "LON",

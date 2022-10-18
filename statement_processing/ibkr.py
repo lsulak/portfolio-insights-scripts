@@ -240,12 +240,21 @@ def load_stock_transactions_to_db(
     """
     logger.info("Going to process stock transactions information and store it to the DB")
 
+    if stock_transactions.empty:
+        return
+
     stock_transactions = stock_transactions.apply(
         lambda x: replace_renamed_ticker_symbols(x, ticker_column="Symbol"), axis=1
     )
     stock_transactions = stock_transactions.apply(
         lambda x: produce_missing_exchange_prefixes_for_tickers(x, ticker_column="Symbol"), axis=1
     )
+
+    if transaction_fees.empty:
+        stock_transactions.to_sql("tmp_table_stocks", sqlite_conn, index=False, if_exists="replace")
+        DB_QUERIES.insert_ibkr_transactions_without_fees(sqlite_conn)
+        sqlite_conn.execute("DROP TABLE tmp_table_stocks")
+        return
 
     transaction_fees = transaction_fees.apply(
         lambda x: replace_renamed_ticker_symbols(x, ticker_column="Symbol"), axis=1
@@ -257,7 +266,7 @@ def load_stock_transactions_to_db(
     stock_transactions.to_sql("tmp_table_stocks", sqlite_conn, index=False, if_exists="replace")
     transaction_fees.to_sql("tmp_table_tran_fees", sqlite_conn, index=False, if_exists="replace")
 
-    DB_QUERIES.insert_ibkr_transactions(sqlite_conn)
+    DB_QUERIES.insert_ibkr_transactions_with_fees(sqlite_conn)
 
     sqlite_conn.execute("DROP TABLE tmp_table_stocks")
     sqlite_conn.execute("DROP TABLE tmp_table_tran_fees")
@@ -279,33 +288,22 @@ def load_dividends_to_db(
     """
     logger.info("Going to process dividend information and store it to the DB")
 
+    if input_dividends.empty:
+        return
+
     input_dividends["Item"] = input_dividends["Description"].apply(
         lambda x: re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(1)
     )
     input_dividends["PPU"] = input_dividends["Description"].apply(
         lambda x: float(re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(2))
     )
-    input_taxes["Item"] = input_taxes["Description"].apply(
-        lambda x: re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(1)
-    )
-    input_taxes["PPU"] = input_taxes["Description"].apply(
-        lambda x: float(re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(2))
-    )
-
     input_dividends.to_sql("tmp_table_dividends", sqlite_conn, index=False, if_exists="replace")
-    input_taxes.to_sql("tmp_table_div_taxes", sqlite_conn, index=False, if_exists="replace")
 
     deduped_dividends = pd.DataFrame(
         DB_QUERIES.select_deduped_dividends_received(sqlite_conn),
         columns=["id", "Currency", "Date", "Item", "PPU", "Amount"],
     )
-
-    deduped_taxes = pd.DataFrame(
-        DB_QUERIES.select_deduped_dividend_taxes(sqlite_conn),
-        columns=["id", "Currency", "Date", "Item", "PPU", "Amount"],
-    )
     no_negative_dividends_received_validation = deduped_dividends.query("Amount < 0")
-    no_positive_dividend_taxes_validation = deduped_taxes.query("Amount > 0")
 
     if not no_negative_dividends_received_validation.empty:
         raise Exception(
@@ -315,24 +313,45 @@ def load_dividends_to_db(
             f"Please investigate:\n{no_negative_dividends_received_validation}"
         )
 
-    if not no_positive_dividend_taxes_validation.empty:
-        raise Exception(
-            f"There are multiple dividend tax records that have positive tax amount - but the tax is "
-            f"not a receivable item, it should be always negative! IBKR had this bug in the past in "
-            f"their CSV reports. Perhaps you'll need to manually correct the CSV statements. "
-            f"Please investigate:\n{no_positive_dividend_taxes_validation}"
-        )
-
     deduped_dividends = deduped_dividends.apply(replace_renamed_ticker_symbols, axis=1)
     deduped_dividends = deduped_dividends.apply(produce_missing_exchange_prefixes_for_tickers, axis=1)
 
-    deduped_taxes = deduped_taxes.apply(replace_renamed_ticker_symbols, axis=1)
-    deduped_taxes = deduped_taxes.apply(produce_missing_exchange_prefixes_for_tickers, axis=1)
-
     deduped_dividends.to_sql("tmp_table_deduped_dividends", sqlite_conn, index=False, if_exists="replace")
-    deduped_taxes.to_sql("tmp_table_deduped_taxes", sqlite_conn, index=False, if_exists="replace")
 
-    DB_QUERIES.insert_dividend_records(sqlite_conn)
+    if not input_taxes.empty:
+        input_taxes["Item"] = input_taxes["Description"].apply(
+            lambda x: re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(1)
+        )
+        input_taxes["PPU"] = input_taxes["Description"].apply(
+            lambda x: float(re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(2))
+        )
+        input_taxes.to_sql("tmp_table_div_taxes", sqlite_conn, index=False, if_exists="replace")
+
+        deduped_taxes = pd.DataFrame(
+            DB_QUERIES.select_deduped_dividend_taxes(sqlite_conn),
+            columns=["id", "Currency", "Date", "Item", "PPU", "Amount"],
+        )
+        no_positive_dividend_taxes_validation = deduped_taxes.query("Amount > 0")
+
+        if not no_positive_dividend_taxes_validation.empty:
+            raise Exception(
+                f"There are multiple dividend tax records that have positive tax amount - but the tax is "
+                f"not a receivable item, it should be always negative! IBKR had this bug in the past in "
+                f"their CSV reports. Perhaps you'll need to manually correct the CSV statements. "
+                f"Please investigate:\n{no_positive_dividend_taxes_validation}"
+            )
+        deduped_taxes = deduped_taxes.apply(replace_renamed_ticker_symbols, axis=1)
+        deduped_taxes = deduped_taxes.apply(produce_missing_exchange_prefixes_for_tickers, axis=1)
+
+        deduped_taxes.to_sql("tmp_table_deduped_taxes", sqlite_conn, index=False, if_exists="replace")
+
+        DB_QUERIES.insert_dividend_records_with_taxes(sqlite_conn)
+
+        sqlite_conn.execute("DROP TABLE tmp_table_div_taxes")
+        sqlite_conn.execute("DROP TABLE tmp_table_deduped_taxes")
+
+    else:
+        DB_QUERIES.insert_dividend_records_without_taxes(sqlite_conn)
 
     duplicit_dividend_records_validation = DB_QUERIES.validate_duplicit_dividend_records(sqlite_conn)
     if duplicit_dividend_records_validation:
@@ -342,13 +361,8 @@ def load_dividends_to_db(
             f"Please investigate:\n{duplicit_dividend_records_validation}"
         )
 
-    for tmp_table_to_remove in (
-        "tmp_table_dividends",
-        "tmp_table_div_taxes",
-        "tmp_table_deduped_dividends",
-        "tmp_table_deduped_taxes",
-    ):
-        sqlite_conn.execute(f"DROP TABLE {tmp_table_to_remove}")
+    sqlite_conn.execute("DROP TABLE tmp_table_dividends")
+    sqlite_conn.execute("DROP TABLE tmp_table_deduped_dividends")
 
 
 def drop_all_tmp_tables(sqlite_conn: sqlite3.Connection) -> None:

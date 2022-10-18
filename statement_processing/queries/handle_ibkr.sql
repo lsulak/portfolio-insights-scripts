@@ -76,7 +76,59 @@ INSERT INTO transactions
        ON CONFLICT(id) DO NOTHING
 
 
--- name: insert_ibkr_transactions
+-- name: insert_ibkr_transactions_without_fees
+WITH records_to_insert AS (
+
+     SELECT DISTINCT
+          id,
+          DATE(REPLACE(`Date/Time`, ',', '')) AS Date,
+          CASE
+               WHEN Quantity > 0
+               THEN 'BUY'
+               ELSE 'SELL'
+          END AS Type,
+          Symbol AS Item,
+          Currency,
+          ROUND(Quantity, 4) AS Units,
+          ROUND(`T.Price`, 4) AS PPU,
+          ROUND(`Comm/Fee`, 4) AS Fees,
+          .0 as Taxes,
+          1.0 AS StockSplitRatio,
+         '' AS Remarks
+
+     FROM tmp_table_stocks
+
+ ORDER BY `Date/Time`
+)
+
+INSERT INTO transactions
+
+SELECT *
+  FROM records_to_insert
+
+ -- From doc, see 'Parsing Ambiguity': https://sqlite.org/lang_upsert.html
+ WHERE TRUE
+
+    -- Overlapping statements or processing of the same input file
+    -- twice is all allowed. But duplicates are not allowed.
+    ON CONFLICT(id) DO NOTHING
+
+
+-- name: select_deduped_dividends_received
+-- Sometimes there can be a false positives
+-- (i.e. dividends -$10, then +$10 and then +$5, so the final would be $5).
+  SELECT MIN(id) AS id, -- doesn't matter
+         Currency,
+         Date,
+         Item,
+         PPU,
+         SUM(Amount) AS Amount
+
+    FROM tmp_table_dividends
+GROUP BY Currency, Date, Item, PPU
+
+
+-- name: insert_ibkr_transactions_with_fees
 WITH records_to_insert AS (
 
      SELECT DISTINCT
@@ -119,20 +171,6 @@ SELECT *
     -- twice is all allowed. But duplicates are not allowed.
     ON CONFLICT(id) DO NOTHING
 
--- name: select_deduped_dividends_received
--- Sometimes there can be a false positives
--- (i.e. dividends -$10, then +$10 and then +$5, so the final would be $5).
-  SELECT MIN(id) AS id, -- doesn't matter
-         Currency,
-         Date,
-         Item,
-         PPU,
-         SUM(Amount) AS Amount
-
-    FROM tmp_table_dividends
-GROUP BY Currency, Date, Item, PPU
-
-
 
 -- name: select_deduped_dividend_taxes
 -- Sometimes there can be a false positives
@@ -148,7 +186,41 @@ GROUP BY Currency, Date, Item, PPU
 GROUP BY Currency, Date, Item, PPU
 
 
--- name: insert_dividend_records
+-- name: insert_dividend_records_without_taxes
+WITH records_to_insert AS (
+
+        SELECT DISTINCT
+               id,
+               Date,
+               'DIVIDENDS' AS Type,
+               Item,
+               Currency,
+               ROUND(Amount / PPU, 4) AS Units,
+               ROUND(PPU, 4) AS PPU,
+               0 AS Fees,
+               .0 as Taxes,
+               1.0 AS StockSplitRatio,
+               '' AS Remarks
+
+          FROM tmp_table_deduped_dividends
+
+     ORDER BY date
+)
+
+INSERT INTO transactions
+
+SELECT *
+  FROM records_to_insert
+
+ -- From doc, see 'Parsing Ambiguity': https://sqlite.org/lang_upsert.html
+ WHERE TRUE
+
+    -- Overlapping statements or processing of the same input file
+    -- twice is all allowed. But duplicates are not allowed.
+    ON CONFLICT(id) DO NOTHING
+
+
+-- name: insert_dividend_records_with_taxes
 WITH records_to_insert AS (
 
         SELECT DISTINCT
