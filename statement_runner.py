@@ -82,7 +82,7 @@ if __name__ == "__main__":
     if cli_args.overwrite and os.path.exists(cli_args.output_database):
         os.remove(cli_args.output_database)
 
-    Path(os.path.dirname(cli_args.output_database)).mkdir(exist_ok=True)
+    Path(os.path.dirname(cli_args.output_database)).mkdir(exist_ok=True, parents=True)
 
     create_tables(cli_args.output_database)
 
