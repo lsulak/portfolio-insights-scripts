@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS deposits_and_withdrawals (
     Date DATE NOT NULL,
     Type TEXT NOT NULL,
     Currency TEXT NOT NULL,
-    Amount DOUBLE NOT NULL
+    Amount DOUBLE NOT NULL,
+    Remarks TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS forex (
@@ -29,5 +30,6 @@ CREATE TABLE IF NOT EXISTS forex (
     CurrencyPairCode TEXT NOT NULL,
     CurrencySoldUnits DOUBLE NOT NULL,
     PPU DOUBLE NOT NULL,
-    Fees DOUBLE NOT NULL
+    Fees DOUBLE NOT NULL,
+    Remarks TEXT NOT NULL
 );

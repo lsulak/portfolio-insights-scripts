@@ -7,8 +7,8 @@ INSERT INTO transactions
              ELSE 'BUY'
          END AS Type,
          Asset AS Item,
-         QuantityTransacted AS Units,
          SpotPriceCurrency AS Currency,
+         QuantityTransacted AS Units,
          SpotPriceatTransaction AS PPU,
          CAST(Fees AS DOUBLE) AS Fees,
          .0 AS Taxes,

@@ -16,6 +16,7 @@ URL_NYSE_TICKETS = "https://raw.githubusercontent.com/rreichel3/US-Stock-Symbols
 RENAMED_STOCKS = {
     "FB": "META",
     "MYL": "VTRS",
+    "VTIQ": "NKLA",
 }
 
 MAP_STOCK_TO_EXCHANGE = {
@@ -90,8 +91,7 @@ class IBKRReportsProcessingConst:  # pylint: disable=too-few-public-methods
             "Description": str,
             "Amount": float,
         },
-        "Fees": {
-            "Subtitle": str,
+        "Other Fees": {
             "Currency": str,
             "Date": str,
             "Description": str,
