@@ -3,11 +3,12 @@ INSERT INTO deposits_and_withdrawals
      SELECT id,
             SettleDate AS Date,
             CASE
-                WHEN Amount > 0 THEN 'Deposit'
-                ELSE 'Withdrawal'
+                WHEN Amount > 0 THEN 'DEPOSIT'
+                ELSE 'WITHDRAWAL'
             END AS Type,
             Currency,
-            ROUND(Amount, 4) AS Amount
+            ROUND(Amount, 4) AS Amount,
+            'IBKR' AS Remarks
 
        FROM tmp_table
 
@@ -32,9 +33,9 @@ INSERT INTO forex
             SUBSTR(Symbol, 1, 3) AS CurrencySold,
             Currency AS CurrencyBought,
             Symbol AS CurrencyPairCode,
-            ROUND(Quantity, 4) AS CurrencySoldUnits,
+            ABS(ROUND(Quantity, 4)) AS CurrencySoldUnits,
             ROUND(`T.Price`, 4) AS PPU,
-            ROUND(ComminUSD, 4) AS Fees
+            ABS(ROUND(ComminUSD, 4)) AS Fees
 
        FROM tmp_table
 
@@ -60,7 +61,7 @@ INSERT INTO transactions
           Currency,
           .0 AS Units,
           .0 PPU,
-          ROUND(SUM(Amount), 4) AS Fees,
+          ABS(ROUND(SUM(Amount), 4)) AS Fees,
           .0 AS Taxes,
           1.0 AS StockSplitRatio,
           Description AS Remarks
@@ -76,7 +77,7 @@ INSERT INTO transactions
        ON CONFLICT(id) DO NOTHING
 
 
--- name: insert_ibkr_transactions_without_fees
+-- name: insert_ibkr_transactions_without_special_fees
 WITH records_to_insert AS (
 
      SELECT DISTINCT
@@ -89,9 +90,9 @@ WITH records_to_insert AS (
           END AS Type,
           Symbol AS Item,
           Currency,
-          ROUND(Quantity, 4) AS Units,
+          ABS(ROUND(Quantity, 4)) AS Units,
           ROUND(`T.Price`, 4) AS PPU,
-          ROUND(`Comm/Fee`, 4) AS Fees,
+          ABS(ROUND(`Comm/Fee`, 4)) AS Fees,
           .0 as Taxes,
           1.0 AS StockSplitRatio,
          '' AS Remarks
@@ -128,7 +129,7 @@ SELECT *
 GROUP BY Currency, Date, Item, PPU
 
 
--- name: insert_ibkr_transactions_with_fees
+-- name: insert_ibkr_transactions_with_special_fees
 WITH records_to_insert AS (
 
      SELECT DISTINCT
@@ -141,10 +142,10 @@ WITH records_to_insert AS (
           END AS Type,
           stocks.Symbol AS Item,
           stocks.Currency,
-          ROUND(stocks.Quantity, 4) AS Units,
+          ABS(ROUND(stocks.Quantity, 4)) AS Units,
           ROUND(stocks.`T.Price`, 4) AS PPU,
-          ROUND(stocks.`Comm/Fee`, 4) AS Fees,
-          ROUND(COALESCE(t_fees.Amount, 0), 4) as Taxes,
+          ABS(ROUND(stocks.`Comm/Fee`, 4)) AS Fees,
+          ABS(ROUND(COALESCE(t_fees.Amount, 0), 4)) as Taxes,
           1.0 AS StockSplitRatio,
           COALESCE(t_fees.Description, '') AS Remarks
 
@@ -174,13 +175,21 @@ SELECT *
 
 -- name: select_deduped_dividend_taxes
 -- Sometimes there can be a false positives
--- (i.e. tax -$10, then +$10 and then -$5, so the final would be -$5).
+-- I.e. tax -$10, then +$10 and then -$5, so the final would
+-- be -$5 - SUM operation would be used because there would be
+-- information about reversion in the Description column.
+-- If there is no reversed info, then we just naively grab
+-- the biggest one and make sure that it's negative.
   SELECT MIN(id) AS id, -- doesn't matter
          Currency,
          Date,
          Item,
          PPU,
-         SUM(Amount) AS Amount
+         CASE
+           WHEN LOWER(Description) LIKE '%reversed%'
+           THEN SUM(Amount)
+           ELSE -1 * ABS(MAX(Amount))
+         END AS Amount
 
     FROM tmp_table_div_taxes
 GROUP BY Currency, Date, Item, PPU
@@ -231,8 +240,8 @@ WITH records_to_insert AS (
                div.Currency,
                ROUND(div.Amount / div.PPU, 4) AS Units,
                ROUND(div.PPU, 4) AS PPU,
-               0 AS Fees,
-               ROUND(COALESCE(tax.Amount, 0), 4) as Taxes,
+               .0 AS Fees,
+               ABS(ROUND(COALESCE(tax.Amount, 0), 4)) as Taxes,
                1.0 AS StockSplitRatio,
                '' AS Remarks
 

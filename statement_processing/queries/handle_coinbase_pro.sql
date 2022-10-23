@@ -2,9 +2,10 @@
 INSERT INTO deposits_and_withdrawals
      SELECT id,
             DATE(time) AS Date,
-            UPPER(SUBSTR(type, 1, 1)) || SUBSTR(type, 2) AS Type,
+            UPPER(type) AS Type,
             `amount/balanceunit` AS Currency,
-            CAST(amount AS DOUBLE) AS Amount
+            CAST(amount AS DOUBLE) AS Amount,
+            'Coinbase Pro' AS Remarks
 
        FROM tmp_table
 
@@ -22,7 +23,7 @@ INSERT INTO deposits_and_withdrawals
 INSERT INTO transactions
      SELECT id,
              DATE(time) AS Date,
-             Type,
+             UPPER(Type) AS Type,
              Item,
              Currency,
              Units,

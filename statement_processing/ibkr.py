@@ -49,7 +49,7 @@ T_PROCESSED_DATA = Dict[str, pd.DataFrame]
 logger = logging.getLogger(__name__)
 
 
-def aggregate_input_files(input_directory: str) -> T_AGGREGATED_RAW_DATA:
+def aggregate_input_files(input_directory: str, remove_totals: bool = True) -> T_AGGREGATED_RAW_DATA:
     """Process all the reports from the input directory and save their data
     into a dictionary of lists. These files are not massive and can easily
     fit into the memory.
@@ -78,6 +78,11 @@ def aggregate_input_files(input_directory: str) -> T_AGGREGATED_RAW_DATA:
                 if line_items[1].strip() == "Header":
                     section_hash = md5(line.encode("utf-8")).hexdigest()
 
+                elif remove_totals and (
+                    "total" in line_items[1].strip().lower() or "total" in line_items[2].strip().lower()
+                ):
+                    continue
+
                 if section_name not in IBKRReportsProcessingConst.MAP_SECTION_TO_DESIRED_COLUMNS.keys():
                     skipped_sections[section_hash] = line
                     continue
@@ -93,7 +98,7 @@ def aggregate_input_files(input_directory: str) -> T_AGGREGATED_RAW_DATA:
     return split_files
 
 
-def preprocess_data(input_data: T_AGGREGATED_RAW_DATA, remove_totals: bool = True) -> T_SEMI_PROCESSED_DATA:
+def preprocess_data(input_data: T_AGGREGATED_RAW_DATA) -> T_SEMI_PROCESSED_DATA:
     """Process sections (=report types) sequentially, and store data items only
     into a dictionary of DataFrames.
 
@@ -128,17 +133,25 @@ def preprocess_data(input_data: T_AGGREGATED_RAW_DATA, remove_totals: bool = Tru
             section_hash,
         )
 
-        section_as_df = pd.read_csv(io.StringIO("".join(section_content)))
+        section_as_str = "".join(section_content)
+
+        try:
+            section_as_df = pd.read_csv(io.StringIO(section_as_str))
+        except pd.errors.ParserError:
+            cols_numbers = list(
+                map(lambda row: len(row.split(IBKRReportsProcessingConst.IN_STAT_FILE_DELIMITER)), section_content)
+            )
+            logger.warning(
+                f"Skipping bad lines from section '{section_name}'. Number of columns in "
+                f"this section, per row: {cols_numbers} (mismatch means extra column or separator!). "
+                f"Section content, please debug if we are missing some important data "
+                f"(outliers were skipped):\n{section_as_str}"
+            )
+            section_as_df = pd.read_csv(io.StringIO(section_as_str), on_bad_lines="skip")
 
         prefiltered_data = section_as_df.query('Header == "Data"').filter(
             items=IBKRReportsProcessingConst.MAP_SECTION_TO_DESIRED_COLUMNS[section_name].keys()
         )
-
-        if remove_totals:
-            # Concatenate the row so that it's just a single string and search
-            # for particular regex pattern; filter out the row on match.
-            idx_of_totals = prefiltered_data.iloc[:, 0].str.contains("^Total.*$", na=False)
-            prefiltered_data = prefiltered_data[~idx_of_totals]
 
         prefiltered_data.columns = prefiltered_data.columns.str.replace(" ", "")
 
@@ -153,6 +166,9 @@ def preprocess_data(input_data: T_AGGREGATED_RAW_DATA, remove_totals: bool = Tru
         # Remove ',' from numbers - otherwise they are considered to be strings, but we need FLOAT representation.
         for col_name, col_type in IBKRReportsProcessingConst.MAP_SECTION_TO_DESIRED_COLUMNS[section_name].items():
             if col_type == float and prefiltered_data[col_name].dtype != float:
+                if prefiltered_data[col_name].dtype == int:
+                    continue
+
                 prefiltered_data[col_name] = prefiltered_data[col_name].str.replace(",", "")
 
         prefiltered_data = prefiltered_data.astype(
@@ -221,6 +237,9 @@ def load_special_fees_to_db(sqlite_conn: sqlite3.Connection, special_fees: T_SEM
     """
     logger.info("Going to process special fees transactions information and store it to the DB")
 
+    if special_fees.empty:
+        return
+
     special_fees.to_sql("tmp_table", sqlite_conn, index=False, if_exists="replace")
 
     DB_QUERIES.insert_ibkr_special_fees(sqlite_conn)
@@ -252,7 +271,7 @@ def load_stock_transactions_to_db(
 
     if transaction_fees.empty:
         stock_transactions.to_sql("tmp_table_stocks", sqlite_conn, index=False, if_exists="replace")
-        DB_QUERIES.insert_ibkr_transactions_without_fees(sqlite_conn)
+        DB_QUERIES.insert_ibkr_transactions_without_special_fees(sqlite_conn)
         sqlite_conn.execute("DROP TABLE tmp_table_stocks")
         return
 
@@ -266,7 +285,7 @@ def load_stock_transactions_to_db(
     stock_transactions.to_sql("tmp_table_stocks", sqlite_conn, index=False, if_exists="replace")
     transaction_fees.to_sql("tmp_table_tran_fees", sqlite_conn, index=False, if_exists="replace")
 
-    DB_QUERIES.insert_ibkr_transactions_with_fees(sqlite_conn)
+    DB_QUERIES.insert_ibkr_transactions_with_special_fees(sqlite_conn)
 
     sqlite_conn.execute("DROP TABLE tmp_table_stocks")
     sqlite_conn.execute("DROP TABLE tmp_table_tran_fees")
@@ -394,7 +413,7 @@ def process(input_directory: str, output_db_location: str) -> None:
         try:
             load_deposits_and_withdrawals_to_db(connection, semi_processed_data["Deposits & Withdrawals"])
             load_forex_transactions_to_db(connection, semi_processed_data["Trades"].query("AssetCategory == 'Forex'"))
-            load_special_fees_to_db(connection, semi_processed_data["Fees"])
+            load_special_fees_to_db(connection, semi_processed_data["Other Fees"])
             load_stock_transactions_to_db(
                 connection,
                 semi_processed_data["Trades"].query("AssetCategory == 'Stocks'"),
