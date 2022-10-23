@@ -30,5 +30,6 @@ CREATE TABLE IF NOT EXISTS forex (
     CurrencyPairCode TEXT NOT NULL,
     CurrencySoldUnits DOUBLE NOT NULL,
     PPU DOUBLE NOT NULL,
-    Fees DOUBLE NOT NULL
+    Fees DOUBLE NOT NULL,
+    Remarks TEXT NOT NULL
 );

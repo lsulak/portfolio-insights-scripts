@@ -35,7 +35,8 @@ INSERT INTO forex
             Symbol AS CurrencyPairCode,
             ABS(ROUND(Quantity, 4)) AS CurrencySoldUnits,
             ROUND(`T.Price`, 4) AS PPU,
-            ABS(ROUND(ComminUSD, 4)) AS Fees
+            ABS(ROUND(ComminUSD, 4)) AS Fees,
+            'IBKR' AS Remarks
 
        FROM tmp_table
 
