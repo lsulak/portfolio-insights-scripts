@@ -127,6 +127,7 @@ SELECT *
          SUM(Amount) AS Amount
 
     FROM tmp_table_dividends
+    WHERE Item != 'None'
 GROUP BY Currency, Date, Item, PPU
 
 

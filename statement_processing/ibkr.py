@@ -305,17 +305,28 @@ def load_dividends_to_db(
         Exception: if there are unexpected duplicates in the dataset or situations
             which we haven't anticipated, such as different kinds of fees.
     """
+
+    def get_dividend_item(item):
+        try:
+            return re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, item.strip()).group(1)
+        except:
+            logger.error(f"Item {item} seems to have unsupported data, Dividend Item couldn't be obtained")
+
+    def get_dividend_ppu(item):
+        try:
+            return float(re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, item.strip()).group(2))
+        except:
+            logger.error(f"Item {item} seems to have unsupported data, Dividend PPU couldn't be obtained")
+            return 0.0
+
     logger.info("Going to process dividend information and store it to the DB")
 
     if input_dividends.empty:
         return
 
-    input_dividends["Item"] = input_dividends["Description"].apply(
-        lambda x: re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(1)
-    )
-    input_dividends["PPU"] = input_dividends["Description"].apply(
-        lambda x: float(re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(2))
-    )
+    input_dividends["Item"] = input_dividends["Description"].apply(get_dividend_item)
+    input_dividends["PPU"] = input_dividends["Description"].apply(get_dividend_ppu)
+
     input_dividends.to_sql("tmp_table_dividends", sqlite_conn, index=False, if_exists="replace")
 
     deduped_dividends = pd.DataFrame(
@@ -338,12 +349,13 @@ def load_dividends_to_db(
     deduped_dividends.to_sql("tmp_table_deduped_dividends", sqlite_conn, index=False, if_exists="replace")
 
     if not input_taxes.empty:
-        input_taxes["Item"] = input_taxes["Description"].apply(
-            lambda x: re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(1)
-        )
-        input_taxes["PPU"] = input_taxes["Description"].apply(
-            lambda x: float(re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, x.strip()).group(2))
-        )
+        input_taxes["Item"] = input_taxes["Description"].apply(get_dividend_item)
+        input_taxes["PPU"] = input_taxes["Description"].apply(get_dividend_ppu)
+
+        input_taxes = input_taxes.query(
+            "PPU > 0.0"
+        )  # Ignore dividends on margin, at least for now; they have PPU = 0.0
+
         input_taxes.to_sql("tmp_table_div_taxes", sqlite_conn, index=False, if_exists="replace")
 
         deduped_taxes = pd.DataFrame(
@@ -359,6 +371,7 @@ def load_dividends_to_db(
                 f"their CSV reports. Perhaps you'll need to manually correct the CSV statements. "
                 f"Please investigate:\n{no_positive_dividend_taxes_validation}"
             )
+
         deduped_taxes = deduped_taxes.apply(replace_renamed_ticker_symbols, axis=1)
         deduped_taxes = deduped_taxes.apply(produce_missing_exchange_prefixes_for_tickers, axis=1)
 
