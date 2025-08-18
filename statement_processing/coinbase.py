@@ -61,17 +61,25 @@ def load_data_into_pandas(input_data: T_INPUT_DATA_GEN) -> pd.DataFrame:
         Pandas DataFrame containing de-duplicated input data with MD5
         hash representation of each line.
     """
-    input_df = pd.read_csv(StringIO("".join(input_data)))
+    input_df = pd.read_csv(
+        StringIO("".join(input_data)),
+        parse_dates=["Timestamp"],
+        date_parser=lambda x: pd.to_datetime(x, utc=True, errors="coerce"),
+    )
+    input_df["Fees and/or Spread"] = input_df["Fees and/or Spread"].fillna(0)
 
-    input_df.Fees = input_df.Fees.fillna(0)
+    input_df.loc[input_df["Notes"].isna(), "Notes"] = "Staking Income"
+    input_df.loc[input_df["Asset"] == "ETH2", "Asset"] = "ETH"
 
     input_df = create_id_for_each_row(input_df)
 
     input_df.columns = input_df.columns.str.replace(" ", "")
+    input_df.columns = input_df.columns.str.replace("/", "")
+
     return input_df.drop_duplicates()
 
 
-def load_data_to_db(sqlite_conn: sqlite3.Connection, input_data: pd.DataFrame) -> None:
+def load_transactions_to_db(sqlite_conn: sqlite3.Connection, input_data: pd.DataFrame) -> None:
     """This is the main function that is responsible for loading the data into a SQLite table.
 
     Args:
@@ -83,6 +91,22 @@ def load_data_to_db(sqlite_conn: sqlite3.Connection, input_data: pd.DataFrame) -
     input_data.to_sql("tmp_table", sqlite_conn, index=False, if_exists="replace")
 
     DB_QUERIES.insert_coinbase(sqlite_conn)
+
+    sqlite_conn.execute("DROP TABLE tmp_table")
+
+
+def load_deposits_and_withdrawals_to_db(sqlite_conn: sqlite3.Connection, input_data: pd.DataFrame) -> None:
+    """This function identifies deposit and withdrawal events and loads them into
+    a SQLite table.
+
+    Args:
+        sqlite_conn: See :func:`load_transactions_to_db`.
+        input_data: See the output of :func:`load_data_into_pandas`.
+    """
+    logger.info("Going to process deposits and withdrawals information and store it to the DB")
+    input_data.to_sql("tmp_table", sqlite_conn, index=False, if_exists="replace")
+
+    DB_QUERIES.insert_coinbase_deposits_and_withdrawals(sqlite_conn)
 
     sqlite_conn.execute("DROP TABLE tmp_table")
 
@@ -104,7 +128,9 @@ def process(input_directory: str, output_db_location: str) -> None:
 
     with sqlite3.connect(output_db_location) as connection:
         try:
-            load_data_to_db(connection, semi_processed_data)
+            load_transactions_to_db(connection, semi_processed_data)
+            load_deposits_and_withdrawals_to_db(connection, semi_processed_data)
+
         except Exception as err:
             connection.execute("DROP TABLE tmp_table")
             raise Exception(

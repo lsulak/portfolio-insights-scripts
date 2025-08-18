@@ -13,21 +13,26 @@ DB_QUERIES = aiosql.from_path(_QUERIES_DIR, "sqlite3")
 URL_NASDAQ_TICKETS = "https://raw.githubusercontent.com/rreichel3/US-Stock-Symbols/main/nasdaq/nasdaq_tickers.txt"
 URL_NYSE_TICKETS = "https://raw.githubusercontent.com/rreichel3/US-Stock-Symbols/main/nyse/nyse_tickers.txt"
 
-RENAMED_STOCKS = {
-    "FB": "META",
-    "MYL": "VTRS",
-    "VTIQ": "NKLA",
-}
+RENAMED_STOCKS = {"FB": "META", "MYL": "VTRS", "VTIQ": "NKLA", "PLN": "PLNH", "PLNHF": "PLNH", "EMNDA": "EMN"}
 
 MAP_STOCK_TO_EXCHANGE = {
+    "AVST": "LON",
+    "AVRO": "NASDAQ",
+    "NKLA": "NASDAQ",
+    "STOR": "NYSE",
+    "SPCE": "NYSE",
     "WORK": "NYSE",
     "PLNHF": "OTCMKTS",
+    "PLNH": "OTCMKTS",
     "TCNNF": "OTCMKTS",
     "TRUL": "CNSX",
     "SHWZ": "OTCMKTS",
     "CDR": "WSE",
     "AVST": "LON",
     "GRG": "LON",
+    "EMN": "ASX",
+    "EMH": "LON",
+    "AML": "LON",
 }
 
 LOGGING_CONF = {
