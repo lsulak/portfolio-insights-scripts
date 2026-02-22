@@ -11,19 +11,25 @@ from google import genai
 from google.genai import types, errors
 from tenacity import retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 
-from helios.utils.constants import EDGAR_EXTRACTOR_CREATIVITY_VARIANCE, TIMEOUT_BETWEEN_LLM_API_CALLS
+from helios.utils.constants import (
+    EDGAR_EXTRACTOR_CREATIVITY_VARIANCE,
+    MAX_RETRY_ATTEMPTS,
+    RETRY_MIN_WAIT_SECONDS,
+    RETRY_MAX_WAIT_SECONDS
+)
 
 
 # ==========================================
 # DATA CONTRACTS
 # ==========================================
 @dataclass
-class LocalSecDocument:
+class LocalSECDocument:
     ticker: str
     submission_year: int
     submission_order_for_the_year: int
     form_type: str
-    local_file_path: str 
+    file_path_raw: str
+    file_path_ai_ready: Optional[str]
     mime_type: str        
 
 @dataclass
@@ -35,14 +41,14 @@ class GeminiHostedFile:
 # ==========================================
 # INTERFACES
 # ==========================================
-class IEDGARFetcher(ABC):
+class ISECFetcher(ABC):
     @abstractmethod
-    async def fetch_latest_filings(self, ticker: str, form_type: str) -> Optional[List[LocalSecDocument]]:
+    async def fetch_latest_filings(self, ticker: str, form_type: str) -> Optional[List[LocalSECDocument]]:
         pass
 
 class IGeminiFileManager(ABC):
     @abstractmethod
-    async def upload_for_inference(self, document: LocalSecDocument) -> GeminiHostedFile:
+    async def upload_for_inference(self, document: LocalSECDocument) -> GeminiHostedFile:
         pass
 
     @abstractmethod
@@ -57,7 +63,7 @@ class IExtractorAgent(ABC):
 # ==========================================
 # CONCRETE IMPLEMENTATIONS
 # ==========================================
-class EDGARFetcher(IEDGARFetcher):
+class SECFetcher(ISECFetcher):
     """Handles interaction with the SEC EDGAR database."""
     
     def __init__(self, company_name: str, email_address: str, download_dir: str):
@@ -74,27 +80,19 @@ class EDGARFetcher(IEDGARFetcher):
             cutoff = today.replace(year=today.year - years_back, month=2, day=28)
         return cutoff.strftime("%Y-%m-%d")
 
-    async def fetch_latest_filings(self, ticker: str, form_type: str, years_back: int) -> Optional[List[LocalSecDocument]]:
+    async def fetch_latest_filings(self, ticker: str, form_type: str, years_back: int) -> Optional[List[LocalSECDocument]]:
         """
         Downloads the filing asynchronously to prevent blocking the main thread.
         Note: The SEC rate limits connections to 10 requests/second.
         """
-        def file_to_ignore(filename):
-            return filename.endswith('_final.txt') or filename.endswith('_primary.txt') or filename.endswith('_truncated.txt') or filename.endswith('_cleaned.txt')
-        
         cutoff_date = self._get_report_cutoff_date(years_back)
-        print(f"[SEC] Downloading {form_type} for {ticker} filed after {cutoff_date}...")
+        print(f"[SEC] Downloading Form '{form_type}' for {ticker} filed after {cutoff_date}...")
         
         await asyncio.to_thread(self.downloader.get, form_type, ticker, after=cutoff_date)
 
-        # Locate the downloaded file. 
-        search_pattern = os.path.join(
-            self.download_dir, "helios", ticker, "sec_edgar_filings", form_type, "*", "*.txt"
-        )
-        downloaded_files = [
-            fn for fn in glob.glob(search_pattern)
-            if not file_to_ignore(os.path.basename(fn))
-         ]
+        # Locate the downloaded file. This is standard sub-location and cannot be changed.
+        search_pattern = os.path.join(self.download_dir, "sec-edgar-filings", ticker, form_type, "*", "*.txt")
+        downloaded_files = glob.glob(search_pattern)
 
         if not downloaded_files:
             print(f"[SEC] No {form_type} found for {ticker}.")
@@ -105,16 +103,25 @@ class EDGARFetcher(IEDGARFetcher):
 
             dir_of_curr_file = curr_file.split("/")[-2] # just the parent dir
             _, two_digits_submission_year, submission_order_for_the_year = dir_of_curr_file.split("-")
-            four_digit_submission_year = datetime.strptime(str(two_digits_submission_year), "%y").year
+            
+            # Parse 2-digit year correctly (handles years after 2026)
+            parsed_year = datetime.strptime(str(two_digits_submission_year), "%y").year
+            current_year = datetime.now().year
+            # If parsed year is more than 50 years before current, it's likely a future year
+            if parsed_year < (current_year - 50):
+                four_digit_submission_year = parsed_year + 100
+            else:
+                four_digit_submission_year = parsed_year
 
             print(f"[SEC] Downloaded file for {ticker}, {form_type}, submission year: {four_digit_submission_year}, order: {submission_order_for_the_year}")
 
-            curr_extraction = LocalSecDocument(
+            curr_extraction = LocalSECDocument(
                 ticker=ticker,
                 submission_year=four_digit_submission_year,
                 submission_order_for_the_year=submission_order_for_the_year,
                 form_type=form_type,
-                local_file_path=curr_file,
+                file_path_raw=curr_file,
+                file_path_ai_ready=None,
                 mime_type="text/plain" # SEC primary submissions are SGML/Text
             )
             processed_docs.append(curr_extraction)
@@ -129,7 +136,7 @@ class GeminiFileManager(IGeminiFileManager):
         # The new SDK instantiates a Client rather than relying on global state
         self.client = genai.Client(api_key=api_key)
 
-    async def upload_for_inference(self, document: LocalSecDocument) -> GeminiHostedFile:
+    async def upload_for_inference(self, document: LocalSECDocument) -> GeminiHostedFile:
         """
         Uploads the file to Google's servers. 
         Files uploaded here exist for 48 hours and cannot be downloaded back.
@@ -137,15 +144,20 @@ class GeminiFileManager(IGeminiFileManager):
         print(f"[GEMINI] Uploading {document.ticker} {document.form_type} to AI brain...")
         
         # Native async: no thread pool required.
-        uploaded_file = await self.client.aio.files.upload(file=document.local_file_path)
+        uploaded_file = await self.client.aio.files.upload(file=document.file_path_ai_ready)
         
-        # Native pooling: we use asyncio.sleep to safely yield the event loop
+        # Wait for file processing with timeout
         file_info = await self.client.aio.files.get(name=uploaded_file.name)
+        max_wait_time = 300  # 5 minutes timeout
+        elapsed = 0
         
-        while file_info.state.name == "PROCESSING":
-            await asyncio.sleep(2)  
+        while file_info.state.name == "PROCESSING" and elapsed < max_wait_time:
+            await asyncio.sleep(2)
+            elapsed += 2
             file_info = await self.client.aio.files.get(name=uploaded_file.name)
-            
+        
+        if file_info.state.name == "PROCESSING":
+            raise TimeoutError(f"File processing timed out after {max_wait_time}s for {uploaded_file.name}")
         if file_info.state.name == "FAILED":
             raise ValueError(f"File processing failed for {uploaded_file.name}")
                     
@@ -185,8 +197,8 @@ class ExtractorAgent(IExtractorAgent):
     # exponential backoff.
     @retry(
         retry=retry_if_exception_type(errors.APIError),
-        wait=wait_exponential(multiplier=4, min=4, max=120),
-        stop=stop_after_attempt(TIMEOUT_BETWEEN_LLM_API_CALLS),
+        wait=wait_exponential(multiplier=4, min=RETRY_MIN_WAIT_SECONDS, max=RETRY_MAX_WAIT_SECONDS),
+        stop=stop_after_attempt(MAX_RETRY_ATTEMPTS),
         reraise=True
     )
     async def generate_structured_dossier(self, ai_file: GeminiHostedFile, system_prompt: str) -> str:

@@ -1,6 +1,15 @@
+import os
 import re
+import logging
+
+from helios.extraction_engine.edgar_extraction import LocalSECDocument
 
 class SECExtractor:
+
+    def __init__(self, target_dir: str, logger: logging.Logger = None):
+        self._target_dir = target_dir  
+        self._logger = logger or logging.getLogger(self.__class__.__name__) 
+
     # ==========================================
     # PRE-COMPILED REGEX PATTERNS 
     # Evaluated once upon module load for maximum throughput
@@ -62,67 +71,119 @@ class SECExtractor:
     PATTERN_SPACES = re.compile(r'[ \t]{2,}')
     PATTERN_NEWLINES = re.compile(r'\n{2,}')
 
+    def _log_step(self, message: str, char_count: int):
+        """Helper to log cleaning steps with character count."""
+        self._logger.debug(f"{message} (length: {char_count:,} chars)")
 
-    @classmethod
-    def heuristic_sec_cleaner(cls, file_path: str, max_chars: int = 950000) -> str:
+    def clean_and_minify(
+        self, 
+        report: LocalSECDocument, 
+        max_chars: int = 950000
+    ) -> str:
         """
-        Strips binary bloat and converts the remaining HTML to LLM-native text,
+        Strips binary bloat and converts remaining HTML to LLM-native text,
         preserving financial tables and document hierarchy before truncation.
-        """
         
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        Args:
+            report: The SEC document to clean
+            max_chars: Maximum character limit after cleaning
+            
+        Returns:
+            str: Path to the cleaned output file
+        """
+        if not os.path.exists(report.file_path_raw):
+            raise FileNotFoundError(f"Source file not found: {report.file_path_raw}")
+        
+        with open(report.file_path_raw, "r", encoding="utf-8", errors="ignore") as f:
             raw_text = f.read()
 
-        print(f"   🧹 [HEURISTIC CLEANER] Processing {file_path}...")
-
-        # 1: Purge SEC Binary Exhibits
-        print(f"      -> Stripping binary exhibits (length: {len(raw_text):,} chars)...")
-        curr_text = cls.PATTERN_DOCS.sub('', raw_text)
-
-        # 1.5: The Binary Annihilator
-        print(f"      -> Stripping edge case binary blobs (length: {len(curr_text):,} chars)...")
-        curr_text = cls.PATTERN_UUENCODE.sub('[UUENCODED BINARY REMOVED]\n', curr_text)
-        curr_text = cls.PATTERN_SGML_BIN.sub(r'[\1 BLOCK REMOVED]', curr_text)
-        curr_text = cls.PATTERN_BASE64_MASSIVE.sub('[MASSIVE BASE64 REMOVED]', curr_text)
+        self._logger.info(f"🧹 Cleaning {os.path.basename(report.file_path_raw)}...")
         
-        # MOVED: The Entropy Blob Filter must execute here, before whitespace is condensed
-        print(f"      -> Vaporizing unlabeled gibberish blobs (length: {len(curr_text):,} chars)...")
-        curr_text = cls.PATTERN_ENTROPY.sub('[UNLABELED GIBBERISH REMOVED]\n', curr_text)
+        curr_text = self._remove_binary_exhibits(raw_text)
 
-        # 2. Purge inline base64 images
-        print(f"      -> Scrubbing inline base64 image data (length: {len(curr_text):,} chars)...")
-        curr_text = cls.PATTERN_IMAGES.sub(r'\1[REMOVED]', curr_text)
+        curr_text = self._remove_inline_images(curr_text)
+        
+        curr_text = self._remove_structural_blocks(curr_text)
+        
+        curr_text = self._remove_html_bloat(curr_text)
+        
+        curr_text = self._condense_whitespace(curr_text)
+        
+        # failsafe
+        curr_text = self._truncate_if_needed(curr_text, max_chars)
+        
+        output_path = self._save_cleaned_file(report, curr_text)
+        
+        return output_path
 
-        # 3: Destroy useless massive blocks entirely
-        print(f"      -> Removing non-narrative structural blocks (length: {len(curr_text):,} chars)...")
-        curr_text = cls.PATTERN_STRUCT_BLOCKS.sub('', curr_text)
+    def _remove_binary_exhibits(self, text: str) -> str:
+        """Remove SGML document boundaries and binary blobs."""
+        self._log_step("   -> Stripping binary exhibits", len(text))
+        text = self.PATTERN_DOCS.sub('', text)
+        
+        self._log_step("   -> Stripping edge case binary blobs", len(text))
+        text = self.PATTERN_UUENCODE.sub('[UUENCODED BINARY REMOVED]\n', text)
+        text = self.PATTERN_SGML_BIN.sub(r'[\1 BLOCK REMOVED]', text)
+        text = self.PATTERN_BASE64_MASSIVE.sub('[MASSIVE BASE64 REMOVED]', text)
+        
+        # Entropy filter must run before whitespace condensation
+        self._log_step("   -> Vaporizing unlabeled gibberish blobs", len(text))
+        text = self.PATTERN_ENTROPY.sub('[UNLABELED GIBBERISH REMOVED]\n', text)
+        
+        return text
 
-        # 4: Strip HTML Bloat Attributes
-        print(f"      -> Removing HTML bloat attributes (length: {len(curr_text):,} chars)...")
-        curr_text = cls.PATTERN_STYLE_ATTR.sub('', curr_text)
-        curr_text = cls.PATTERN_OTHER_ATTR.sub('', curr_text)
-        curr_text = cls.PATTERN_INLINE_TAGS.sub(' ', curr_text)
+    def _remove_inline_images(self, text: str) -> str:
+        """Remove inline base64 encoded images."""
+        self._log_step("   -> Scrubbing inline base64 image data", len(text))
+        return self.PATTERN_IMAGES.sub(r'\1[REMOVED]', text)
 
-        # 5: Normalize & Condense Whitespace
-        print(f"      -> Condensing whitespace (length: {len(curr_text):,} chars)...")
-        curr_text = curr_text.replace("&#160;", " ").replace("&nbsp;", " ").replace("\xa0", " ")
-        curr_text = cls.PATTERN_EMPTY_CELLS.sub('<td></td>', curr_text)
-        curr_text = cls.PATTERN_EMPTY_ROWS.sub('', curr_text)
-        curr_text = cls.PATTERN_SPACES.sub(' ', curr_text)
-        curr_text = cls.PATTERN_NEWLINES.sub('\n', curr_text)
+    def _remove_structural_blocks(self, text: str) -> str:
+        """Remove non-narrative structural blocks."""
+        self._log_step("   -> Removing non-narrative structural blocks", len(text))
+        return self.PATTERN_STRUCT_BLOCKS.sub('', text)
 
-        # 6: The Hard Truncation Failsafe
-        char_count = len(curr_text)
+    def _remove_html_bloat(self, text: str) -> str:
+        """Strip HTML bloat attributes and inline tags."""
+        self._log_step("   -> Removing HTML bloat attributes", len(text))
+        text = self.PATTERN_STYLE_ATTR.sub('', text)
+        text = self.PATTERN_OTHER_ATTR.sub('', text)
+        text = self.PATTERN_INLINE_TAGS.sub(' ', text)
+        return text
+
+    def _condense_whitespace(self, text: str) -> str:
+        """Normalize and condense whitespace while preserving structure."""
+        self._log_step("   -> Condensing whitespace", len(text))
+        text = text.replace("&#160;", " ").replace("&nbsp;", " ").replace("\xa0", " ")
+        text = self.PATTERN_EMPTY_CELLS.sub('<td></td>', text)
+        text = self.PATTERN_EMPTY_ROWS.sub('', text)
+        text = self.PATTERN_SPACES.sub(' ', text)
+        text = self.PATTERN_NEWLINES.sub('\n\n', text)  # Preserve paragraph breaks
+        return text.strip()
+
+    def _truncate_if_needed(self, text: str, max_chars: int) -> str:
+        """Truncate text if it exceeds max_chars limit."""
+        char_count = len(text)
         if char_count > max_chars:
-            print(f"      -> ✂️ Truncating from {char_count:,} down to {max_chars:,} chars.")
-            curr_text = curr_text[:max_chars]
+            self._logger.warning(f"   -> ✂️ Truncating from {char_count:,} to {max_chars:,} chars")
+            return text[:max_chars]
         else:
-            print(f"      -> 🟢 Payload size safe: {char_count:,} chars.")
+            self._logger.info(f"   -> 🟢 Payload size safe: {char_count:,} chars")
+            return text
 
-        # Save to a new file
-        output_path = file_path.replace(".txt", "_cleaned.txt")
+    def _save_cleaned_file(self, report: LocalSECDocument, content: str) -> str:
+        """Save cleaned content to target directory."""
+        # Save as .txt for now even though it's an HTML usually
+        output_path = os.path.join(
+            self._target_dir, 
+            report.form_type, 
+            f"{report.submission_year}_{report.submission_order_for_the_year}.txt"  
+        )
+        
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
-            f.write(curr_text)
-
+            f.write(content)
+        
+        self._logger.info(f"   -> 💾 Saved to: {output_path}")
+        
         return output_path
     
