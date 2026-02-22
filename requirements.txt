@@ -16,3 +16,4 @@ requests
 sec-edgar-downloader
 google-genai
 tenacity
+python-dotenv

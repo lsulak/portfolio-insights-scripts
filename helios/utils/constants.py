@@ -2,6 +2,48 @@ import os
 from string import Template
 
 
+# ==========================================
+# ENVIRONMENT CONFIGURATION (Security Best Practice)
+# ==========================================
+def get_env_or_error(key: str) -> str:
+    """Get environment variable or raise clear error."""
+    value = os.getenv(key)
+    if not value:
+        raise ValueError(f"Missing required environment variable: {key}\n" f"Set it with: export {key}='your-value'")
+    return value
+
+
+GEMINI_API_KEY = get_env_or_error("GEMINI_API_KEY")
+MY_COMPANY_NAME = get_env_or_error("MY_COMPANY_NAME")
+MY_EMAIL = get_env_or_error("MY_EMAIL")
+
+# ==========================================
+# EXTRACTION CONFIGURATION
+# ==========================================
+TESTING_TICKER = get_env_or_error("TESTING_TICKER")
+EDGAR_EXTRACTOR_CREATIVITY_VARIANCE = 0.0  # Temperature setting
+
+# SEC allows only 10 requests per second
+# https://www.sec.gov/about/webmaster-frequently-asked-questions#code-support
+TIMEOUT_BETWEEN_EDGAR_API_CALLS = 5
+
+# Context window size × 4 + buffer for prompt and response
+MAX_CHARS_PER_DOCUMENT = 900_000
+
+# Model selection (can be overridden via environment variable)
+EXTRACTOR_MODEL = get_env_or_error("EXTRACTOR_MODEL")
+
+# ==========================================
+# RETRY & CONCURRENCY CONFIGURATION
+# ==========================================
+MAX_RETRY_ATTEMPTS = 5
+RETRY_MIN_WAIT_SECONDS = 4
+RETRY_MAX_WAIT_SECONDS = 120
+MAX_LLM_PARALLEL_CALLS = int(get_env_or_error("MAX_LLM_PARALLEL_CALLS"))
+
+# ==========================================
+# AGENT PROMPT TEMPLATES
+# ==========================================
 AGENT_ADDITIONS_FIRST_10K_ONLY = " Business: the core business model.\n- Risk Factors: the risk factors."
 AGENT_SPECS_10K_TEMPLATE = Template("""
     1. Persona
@@ -118,66 +160,16 @@ MAP_EDGAR_REPORT_TYPE_TO_AGENT_SPEC = {
     "DEF 14A": AGENT_SPECS_DEF_14A,
     "4": AGENT_SPECS_FORM4,
 }
-# MAP_EDGAR_REPORT_TYPE_TO_YEARS_BACK = {
-#     "10-K": 10,      # 10 years, a full macroeconomic cycle
-#     "10-Q": 3,       # 3 years of recent operational momentum
-#     "8-K": 3,        # 3 years of material events 
-#     "DEF 14A": 5,    # 1 standard executive compensation cycle
-#     "4": 5,          # 5 years of insider trading history
-# }
+
+# ==========================================
+# EDGAR FILING CONFIGURATION
+# ==========================================
 MAP_EDGAR_REPORT_TYPE_TO_YEARS_BACK = {
-    "10-K": 2,      # 10 years, a full macroeconomic cycle
-    "10-Q": 1,       # 3 years of recent operational momentum
-    "8-K": 1,        # 3 years of material events 
-    "DEF 14A": 1,    # 1 standard executive compensation cycle
-    "4": 1,          # 5 years of insider trading history
+    "10-K": int(os.getenv("YEARS_BACK_10K", "1")),
+    "10-Q": int(os.getenv("YEARS_BACK_10Q", "1")),
+    "8-K": int(os.getenv("YEARS_BACK_8K", "1")),
+    "DEF 14A": int(os.getenv("YEARS_BACK_DEF14A", "1")),
+    "4": int(os.getenv("YEARS_BACK_FORM4", "1")),
 }
-EDGAR_REPORT_TYPES_TO_MINIMIZE = ["10-K", "10-Q", "DEF 14A", "8-K"]
-TESTING_TICKER = "GOOGL"
 
-# ==========================================
-# ENVIRONMENT CONFIGURATION (Security Best Practice)
-# ==========================================
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-MY_COMPANY_NAME = os.getenv("MY_COMPANY_NAME", "HeliosFund")
-MY_EMAIL = os.getenv("MY_EMAIL", "")
-
-# Validate critical environment variables
-if not GEMINI_API_KEY:
-    raise ValueError(
-        "GEMINI_API_KEY environment variable is required. "
-        "Set it with: export GEMINI_API_KEY='your-api-key'"
-    )
-if not MY_EMAIL:
-    raise ValueError(
-        "MY_EMAIL environment variable is required. "
-        "Set it with: export MY_EMAIL='your@email.com'"
-    )
-
-# ==========================================
-# EXTRACTION CONFIGURATION
-# ==========================================
-EDGAR_EXTRACTOR_CREATIVITY_VARIANCE = 0.0  # Also called Temperature
-
-# Note: SEC allows only 10 requests per second
-# https://www.sec.gov/about/webmaster-frequently-asked-questions#code-support
-TIMEOUT_BETWEEN_EDGAR_API_CALLS = 5
-
-MAX_CHARS_PER_DOCUMENT = 900000  # Context window size × 4 + buffer
-
-# Model selection (can be overridden via environment variable)
-EXTRACTOR_MODEL = os.getenv("EXTRACTOR_MODEL", "gemini-2.5-flash-lite")
-
-# ==========================================
-# RETRY & CONCURRENCY CONFIGURATION
-# ==========================================
-MAX_RETRY_ATTEMPTS = 5
-RETRY_MIN_WAIT_SECONDS = 4
-RETRY_MAX_WAIT_SECONDS = 120
-MAX_LLM_PARALLEL_CALLS = int(os.getenv("MAX_LLM_PARALLEL_CALLS", "10"))
-
-# ==========================================
-# TESTING
-# ==========================================
-TESTING_TICKER = os.getenv("TESTING_TICKER", "GOOGL")
-
+EDGAR_REPORT_TYPES_TO_MINIMIZE = ("10-K", "10-Q", "DEF 14A", "8-K")
