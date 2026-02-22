@@ -1,0 +1,145 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0" version="29.4.0">
+  <diagram name="Page-1" id="hs2GE82Mdf6T856b8w5m">
+    <mxGraphModel dx="3318" dy="2016" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="krVF8poIIhshtyXyTykB-18" edge="1" parent="1" source="krVF8poIIhshtyXyTykB-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="krVF8poIIhshtyXyTykB-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;The Extraction Engine&lt;/div&gt;&lt;div&gt;[EE]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="175" x="-492.5" y="-20" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-2" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;The Extractor Agent&lt;/h1&gt;&lt;div&gt;Input: 8K, 14A, Form4, 10Ks, and last few 10Q ,&amp;nbsp;Investor Presentation Decks&amp;nbsp;for the last 10 years (not earning transcripts here - hard to get)&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action: give non-opinionated parsing, focus only on chapters related to Business, Risk Factors, Revenue and Cost structure, Financial Statements, R&amp;amp;D, Directors and Executives, Compensation, and skip everything else unrelated to these.&amp;nbsp;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: Markdown containing agent-consumable data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: non deep research, focus on input documents.&lt;/div&gt;" vertex="1">
+          <mxGeometry height="280" width="250" x="-520" y="-340" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-35" edge="1" parent="1" source="krVF8poIIhshtyXyTykB-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="krVF8poIIhshtyXyTykB-26">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="318" y="460" />
+              <mxPoint x="-578" y="460" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1;" value="&lt;div&gt;The Valuation Engine&lt;/div&gt;[VE]" vertex="1">
+          <mxGeometry height="70" width="175" x="230" y="285" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-4" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;The Valuation Agent&lt;/h1&gt;&lt;div&gt;Input: ME + VDE&amp;nbsp;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action: evaluate, in Damodaran style, with no EBITDA: intrinsic, reverse intrinsic, and relative valuation&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: Yaml with three main sections with result details&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: non deep researc&lt;/div&gt;" vertex="1">
+          <mxGeometry height="250" width="250" x="202.5" y="-50" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-36" edge="1" parent="1" source="krVF8poIIhshtyXyTykB-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="krVF8poIIhshtyXyTykB-26">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="672" y="460" />
+              <mxPoint x="-578" y="460" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;" value="&lt;div&gt;The Business Overview Engine&lt;/div&gt;&lt;div&gt;[BE]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="205" x="570" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-7" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;The Business Overview Agent&lt;/h1&gt;&lt;div&gt;Input: VDE + Internet&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action: present business - history, its most important milestones, risks etc&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: Markdown containing agent-consumable data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: deep research&lt;/div&gt;" vertex="1">
+          <mxGeometry height="200" width="360" x="532.5" y="-50" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-32" edge="1" parent="1" source="krVF8poIIhshtyXyTykB-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="krVF8poIIhshtyXyTykB-26">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-780" y="460" />
+              <mxPoint x="-578" y="460" />
+            </Array>
+            <mxPoint x="-810.0000000000005" y="490" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;" value="&lt;div&gt;The Sector Overview Engine&lt;/div&gt;&lt;div&gt;[SE]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="205" x="-882.5" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-11" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;The Sector Overview Agent&lt;/h1&gt;&lt;div&gt;Input: Internet&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action: present sector and focus on risks, nuances, and company&#39;s competitors&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: Markdown containing agent-consumable data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: deep research&lt;/div&gt;" vertex="1">
+          <mxGeometry height="200" width="360" x="-960" y="-50" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-19" edge="1" parent="1" source="krVF8poIIhshtyXyTykB-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="krVF8poIIhshtyXyTykB-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-20" edge="1" parent="1" source="krVF8poIIhshtyXyTykB-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="krVF8poIIhshtyXyTykB-5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-45" y="230" />
+              <mxPoint x="672" y="230" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-34" edge="1" parent="1" source="krVF8poIIhshtyXyTykB-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="krVF8poIIhshtyXyTykB-26">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-45" y="460" />
+              <mxPoint x="-578" y="460" />
+            </Array>
+            <mxPoint x="-810.0000000000005" y="490" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;" value="&lt;div&gt;The Validator Engine&lt;/div&gt;&lt;div&gt;[VDE]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="240" x="-165" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-15" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;The Validator Agent&lt;/h1&gt;&lt;div&gt;Input: EE + ETE +Internet&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action cross reference input data with the Internet, and validate but do not enrich. Debugging mode - highlight what changed&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: Markdown containing agent-consumable data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: deep research mode&lt;/div&gt;" vertex="1">
+          <mxGeometry height="235" width="250" x="-170" y="-50" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-21" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#2D7600;fillColor=#60a917;align=center;verticalAlign=middle;rounded=0;fontColor=#ffffff;" value="1" vertex="1">
+          <mxGeometry height="30" width="60" x="-720" y="325" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-22" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#2D7600;fillColor=#60a917;align=center;verticalAlign=middle;rounded=0;fontColor=#ffffff;" value="1" vertex="1">
+          <mxGeometry height="30" width="60" x="-360" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-23" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#006EAF;fillColor=#1ba1e2;align=center;verticalAlign=middle;rounded=0;fontColor=#ffffff;" value="2" vertex="1">
+          <mxGeometry height="30" width="60" x="30" y="325" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-24" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#C73500;fillColor=#fa6800;align=center;verticalAlign=middle;rounded=0;fontColor=#000000;" value="3" vertex="1">
+          <mxGeometry height="30" width="60" x="370" y="325" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-25" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#C73500;fillColor=#fa6800;align=center;verticalAlign=middle;rounded=0;fontColor=#000000;" value="3" vertex="1">
+          <mxGeometry height="30" width="60" x="730" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-27" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;" value="&lt;div&gt;The Cycle Engine&lt;/div&gt;&lt;div&gt;[ME]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="205" x="-1320" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-28" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;The Market Analyzer Agent&lt;/h1&gt;&lt;div&gt;Input: Internet&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action: understand where we are in the cycle and gather metrics needed for DCF and gather general market valuation data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: YAML containing agent-consumable data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: deep research&lt;/div&gt;" vertex="1">
+          <mxGeometry height="200" width="360" x="-1397.5" y="-50" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-29" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#2D7600;fillColor=#60a917;align=center;verticalAlign=middle;rounded=0;fontColor=#ffffff;" value="1" vertex="1">
+          <mxGeometry height="30" width="60" x="-1150" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-30" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;The Company Analyser Agent&lt;/h1&gt;&lt;div&gt;Input: Outputs from individual Agents + Internet&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action: assess the business for long-term investment&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: Markdown containing agent-consumable data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: deep research&lt;/div&gt;" vertex="1">
+          <mxGeometry height="200" width="360" x="-1100" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-38" edge="1" parent="1" source="krVF8poIIhshtyXyTykB-27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="krVF8poIIhshtyXyTykB-26" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-1218" y="460" />
+            </Array>
+            <mxPoint x="-1218" y="350" as="sourcePoint" />
+            <mxPoint x="-810" y="610" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-26" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;" value="&lt;div&gt;The Company Analyser&lt;/div&gt;&lt;div&gt;[CE]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="205" x="-680" y="600" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-37" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#314354;fillColor=#647687;align=center;verticalAlign=middle;rounded=0;fontColor=#ffffff;" value="4" vertex="1">
+          <mxGeometry height="30" width="60" x="-520" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-39" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;fillColor=#a0522d;fontColor=#ffffff;strokeColor=#6D1F00;strokeWidth=3;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Legend&lt;/h1&gt;&lt;div&gt;More visible borders - Deep Research Mode&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Bottom Right corner digits - Execution Step (some can run in parallel)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="170" width="300" x="-980" y="-380" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-40" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;The Earnings Call Agent&lt;/h1&gt;&lt;div&gt;Input: Internet&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action:earnings call transcripts are hard to get - try Internet, some summaries and people might have noted something on blogs etc. Primary attention only from the last 1 year and smaller attention to previous 4 years.&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: Markdown containing agent-consumable data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: deep research&lt;/div&gt;" vertex="1">
+          <mxGeometry height="230" width="310" x="-550" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-44" edge="1" parent="1" source="krVF8poIIhshtyXyTykB-41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="krVF8poIIhshtyXyTykB-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-41" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;div&gt;The Earnings Call Transcript Engine&lt;/div&gt;&lt;div&gt;[ETE]&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="175" x="-492.5" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="krVF8poIIhshtyXyTykB-42" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#2D7600;fillColor=#60a917;align=center;verticalAlign=middle;rounded=0;fontColor=#ffffff;" value="1" vertex="1">
+          <mxGeometry height="30" width="60" x="-350" y="390" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

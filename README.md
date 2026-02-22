@@ -101,19 +101,19 @@ See a few screenshots of the whole project below.
 
 **An example of net worth assumptions, tracking, and future projection**
 
-<img src="screens/net_worth_future_projection.png" width="800">
+<img src="docs/net_worth_future_projection.png" width="800">
 
 ---
 
 **An example of securities & crypto tracking**
 
-<img src="screens/securities_and_crypto.png" width="800">
+<img src="docs/securities_and_crypto.png" width="800">
 
 ---
 
 **Most of the calculations are driven by a transaction log**
 
-<img src="screens/transactions.png" width="800">
+<img src="docs/transactions.png" width="800">
 
 ---
 
