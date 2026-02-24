@@ -4,9 +4,8 @@ import time
 
 from google import genai
 
-from helios.extraction_engine.commons import AGENT_SPECS_DIR, YEARS_BACK_EARNINGS_CALLS
+from helios.config import AGENT_SPECS_DIR, GEMINI, SEC_EDGAR
 from helios.utils.commons import deep_research_execution_sync, generate_agent_spec, load_agent_spec
-from helios.utils.constants import EARNINGS_CALL_ANALYZER_MODEL
 
 AGENT_SPECS_FILEPATH = AGENT_SPECS_DIR / "earnings_calls_transcript_summary.md"
 
@@ -55,7 +54,7 @@ class EarningsCallTranscriptExtractor:
     def run(self) -> None:
         """Extract and summarize earnings call transcripts using Gemini Deep Research Agent."""
         # Prepare date variables for agent spec and filename
-        years_back = YEARS_BACK_EARNINGS_CALLS
+        years_back = SEC_EDGAR.years_back_earnings_calls
 
         output_filename = self.construct_report_filename(self.output_base_dir, self.ticker, years_back)
 
@@ -66,7 +65,7 @@ class EarningsCallTranscriptExtractor:
 
         agent_spec = self.construct_agent_spec(self.ticker, years_back)
         produced_insight = deep_research_execution_sync(
-            self.client, model=EARNINGS_CALL_ANALYZER_MODEL, agent_spec=agent_spec
+            self.client, model=GEMINI.earnings_call_model, agent_spec=agent_spec
         )
 
         os.makedirs(os.path.dirname(output_filename), exist_ok=True)

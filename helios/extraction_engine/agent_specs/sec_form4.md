@@ -10,7 +10,7 @@
 
 # 3. Context (Extraction Details)
 - **Report Metadata:** Exact submission date, the SEC form type (Form 4), and the company ticker symbol.
-- **Reporting Person:** Extract the exact Name and the specific Title/Role of the insider.
+- **Reporting Persons Array:** Extract an array of objects for each insider listed. Each object must contain name, title, and the transactions_array.
 - **Transactions Array:** Extract an array of objects for every individual transaction row listed in Table I (Non-Derivative Securities) and Table II (Derivative Securities). Each object must contain exactly:
   - `transaction_date` (string)
   - `transaction_code` (string: extract the exact single SEC letter code, e.g., "P" for Purchase, "S" for Sale, "A" for Award, "M" for Exercise).

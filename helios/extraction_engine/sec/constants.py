@@ -1,22 +1,18 @@
-"""SEC-specific configuration - Filing types, extraction settings, and agent spec loading."""
+"""SEC-specific domain constants — filing type mappings, agent spec loading, and prompt fragments.
 
-import os
+This module contains SEC extraction *domain knowledge* only.
+All environment-driven configuration lives in helios.config.
+"""
 
 from jinja2 import Template
 
-from helios.extraction_engine.commons import AGENT_SPECS_DIR
+from helios.config import AGENT_SPECS_DIR, SEC_EDGAR
 from helios.extraction_engine.sec.api import EdgarFormType
 from helios.utils.commons import load_agent_spec
 
 # ==========================================
-# SEC EXTRACTION SETTINGS
+# AGENT SPEC LOADING
 # ==========================================
-SEC_EXTRACTOR_TEMPERATURE = 0.0
-
-# SEC allows only 10 requests per second
-# https://www.sec.gov/about/webmaster-frequently-asked-questions#code-support
-SEC_API_CALL_DELAY = 5
-
 
 # Additional extraction context injected into the most recent 10-K only
 AGENT_ADDITIONS_FIRST_10K_ONLY = """
@@ -43,15 +39,16 @@ def _load_all_agent_specs() -> dict[EdgarFormType, Template]:
 
 SEC_FORM_TO_AGENT_SPEC: dict[EdgarFormType, Template] = _load_all_agent_specs()
 
+
 # ==========================================
-# SEC FILING CONFIGURATION
+# SEC FILING BEHAVIOR
 # ==========================================
 SEC_FORM_TO_YEARS_BACK: dict[EdgarFormType, int] = {
-    EdgarFormType.ANNUAL_REPORT: int(os.getenv("YEARS_BACK_10K", "1")),
-    EdgarFormType.QUARTERLY_REPORT: int(os.getenv("YEARS_BACK_10Q", "1")),
-    EdgarFormType.CURRENT_REPORT: int(os.getenv("YEARS_BACK_8K", "1")),
-    EdgarFormType.PROXY_STATEMENT: int(os.getenv("YEARS_BACK_DEF14A", "1")),
-    EdgarFormType.INSIDER_TRADING: int(os.getenv("YEARS_BACK_FORM4", "1")),
+    EdgarFormType.ANNUAL_REPORT: SEC_EDGAR.years_back_10k,
+    EdgarFormType.QUARTERLY_REPORT: SEC_EDGAR.years_back_10q,
+    EdgarFormType.CURRENT_REPORT: SEC_EDGAR.years_back_8k,
+    EdgarFormType.PROXY_STATEMENT: SEC_EDGAR.years_back_def14a,
+    EdgarFormType.INSIDER_TRADING: SEC_EDGAR.years_back_form4,
 }
 
 SEC_FORMS_TO_CLEAN: tuple[EdgarFormType, ...] = (

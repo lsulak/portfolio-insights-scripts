@@ -2,7 +2,7 @@
 
 import argparse
 
-from helios.utils.constants import TESTING_TICKER
+from helios.config import DEFAULT_TICKER
 
 
 def create_arg_parser() -> argparse.ArgumentParser:
@@ -19,8 +19,8 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--ticker",
         type=str,
-        default=TESTING_TICKER,
-        help=f"Stock ticker symbol to extract filings for (default: {TESTING_TICKER})",
+        default=DEFAULT_TICKER,
+        help=f"Stock ticker symbol to extract filings for (default: {DEFAULT_TICKER})",
     )
 
     parser.add_argument(

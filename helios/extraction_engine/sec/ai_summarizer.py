@@ -9,12 +9,7 @@ from google.genai import types, errors
 from tenacity import before_sleep_log, retry, wait_exponential, stop_after_attempt, retry_if_exception
 
 from helios.extraction_engine.sec.api import IAIFileManager, IExtractorAgent, LocalEdgarDocument, AIHostedFile
-from helios.extraction_engine.sec.constants import SEC_EXTRACTOR_TEMPERATURE
-from helios.utils.constants import (
-    GEMINI_MAX_RETRIES,
-    GEMINI_RETRY_MIN_WAIT_SECONDS,
-    GEMINI_RETRY_MAX_WAIT_SECONDS,
-)
+from helios.config import GEMINI
 
 logger = logging.getLogger(__name__)
 
@@ -97,10 +92,10 @@ class ExtractorAgent(IExtractorAgent):
         retry=retry_if_exception(_is_retryable),
         wait=wait_exponential(
             multiplier=4,
-            min=GEMINI_RETRY_MIN_WAIT_SECONDS,
-            max=GEMINI_RETRY_MAX_WAIT_SECONDS,
+            min=GEMINI.retry_min_wait_seconds,
+            max=GEMINI.retry_max_wait_seconds,
         ),
-        stop=stop_after_attempt(GEMINI_MAX_RETRIES),
+        stop=stop_after_attempt(GEMINI.max_retries),
         before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True,
     )
@@ -110,7 +105,7 @@ class ExtractorAgent(IExtractorAgent):
 
         config = types.GenerateContentConfig(
             system_instruction=system_prompt,
-            temperature=SEC_EXTRACTOR_TEMPERATURE,
+            temperature=GEMINI.extractor_temperature,
             response_mime_type="application/json",
         )
 

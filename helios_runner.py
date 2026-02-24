@@ -18,7 +18,7 @@ from google import genai
 from helios.extraction_engine.sec.extraction_workflow import EdgarExtractionPipeline
 from helios.extraction_engine.earnings_call_transcription import EarningsCallTranscriptExtractor
 from helios.utils.cli_parser import parse_cli_args
-from helios.utils.constants import GEMINI_API_KEY
+from helios.config import GEMINI
 
 CURR_SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -51,7 +51,7 @@ async def main(args) -> int:
     data_dir = os.path.join(CURR_SCRIPT_DIR, "data", "helios")
     os.makedirs(data_dir, exist_ok=True)
 
-    client = genai.Client(api_key=GEMINI_API_KEY)
+    client = genai.Client(api_key=GEMINI.api_key)
 
     result = await EdgarExtractionPipeline(
         client=client,

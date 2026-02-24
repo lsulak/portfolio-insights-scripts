@@ -45,9 +45,7 @@ def deep_research_execution_sync(
     """
     logger.info("Deploying Gemini Deep Research Agent via Interactions API...")
 
-    interaction = client.interactions.create(
-        agent=model, input=agent_spec, background=True
-    )
+    interaction = client.interactions.create(agent=model, input=agent_spec, background=True)
     interaction_id = interaction.id
     logger.info(f"[Interaction ID: {interaction_id}] - Agent dispatched. Entering polling loop...")
 

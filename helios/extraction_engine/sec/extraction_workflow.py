@@ -11,7 +11,7 @@ from typing import Optional
 from google import genai
 from jinja2 import Template
 
-from helios.extraction_engine.commons import MAX_CHARS_PER_DOCUMENT
+from helios.config import GEMINI, SEC_EDGAR
 from helios.extraction_engine.sec.api import LocalEdgarDocument, EdgarFormType
 from helios.extraction_engine.sec.fetcher import EdgarFetcher
 from helios.extraction_engine.sec.cleaner import EdgarDocumentCleaner
@@ -19,15 +19,8 @@ from helios.extraction_engine.sec.ai_summarizer import GeminiFileManager, Extrac
 from helios.extraction_engine.sec.constants import (
     SEC_FORM_TO_AGENT_SPEC,
     SEC_FORM_TO_YEARS_BACK,
-    SEC_API_CALL_DELAY,
     SEC_FORMS_TO_CLEAN,
     AGENT_ADDITIONS_FIRST_10K_ONLY,
-)
-from helios.utils.constants import (
-    MY_COMPANY_NAME,
-    MY_EMAIL,
-    EXTRACTOR_MODEL,
-    GEMINI_MAX_PARALLEL_CALLS,
 )
 
 logger = logging.getLogger(__name__)
@@ -93,12 +86,12 @@ class EdgarExtractionPipeline:
     def _initialize_services(self) -> None:
         """Initialize all required services."""
         self._edgar_fetcher = EdgarFetcher(
-            company_name=MY_COMPANY_NAME, email_address=MY_EMAIL, download_dir=self.dir_raw
+            company_name=SEC_EDGAR.company_name, email_address=SEC_EDGAR.email, download_dir=self.dir_raw
         )
         self._edgar_cleaner = EdgarDocumentCleaner(target_dir=self.dir_minified)
         self._gemini_file_manager = GeminiFileManager(self.client)
-        self._gemini_extractor = ExtractorAgent(self.client, model_name=EXTRACTOR_MODEL)
-        self._llm_semaphore = asyncio.Semaphore(GEMINI_MAX_PARALLEL_CALLS)
+        self._gemini_extractor = ExtractorAgent(self.client, model_name=GEMINI.extractor_model)
+        self._llm_semaphore = asyncio.Semaphore(GEMINI.max_parallel_calls)
 
     async def _process_document(
         self, doc: LocalEdgarDocument, agent_specs: Template, is_most_recent_of_its_type: bool
@@ -206,7 +199,7 @@ class EdgarExtractionPipeline:
             Path to AI-ready document
         """
         if doc.form_type in SEC_FORMS_TO_CLEAN:
-            return self._edgar_cleaner.clean_and_minify(doc, MAX_CHARS_PER_DOCUMENT)
+            return self._edgar_cleaner.clean_and_minify(doc, GEMINI.max_chars_per_document)
         else:
             logger.debug(f"Bypassing cleaner for {doc.file_path_raw}")
             return doc.file_path_raw
@@ -220,7 +213,7 @@ class EdgarExtractionPipeline:
         tasks = []
 
         for form_type, agent_specs in SEC_FORM_TO_AGENT_SPEC.items():
-            await asyncio.sleep(SEC_API_CALL_DELAY)
+            await asyncio.sleep(SEC_EDGAR.api_call_delay_seconds)
 
             years_back = SEC_FORM_TO_YEARS_BACK.get(form_type)
             if years_back is None:
