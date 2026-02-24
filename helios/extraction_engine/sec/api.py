@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional
 
+from google import genai
+
 
 # ==========================================
 # EDGAR (SEC) FORM TYPES
@@ -37,7 +39,7 @@ class LocalEdgarDocument:
     ticker: str
     submission_year: int
     submission_order_for_the_year: int
-    form_type: str
+    form_type: EdgarFormType
     file_path_raw: str
     file_path_ai_ready: Optional[str]
     mime_type: str
@@ -60,13 +62,15 @@ class IEdgarFetcher(ABC):
 
     @abstractmethod
     async def fetch_latest_filings(
-        self, ticker: str, form_type: str, years_back: int
+        self, ticker: str, form_type: EdgarFormType, years_back: int
     ) -> Optional[List[LocalEdgarDocument]]:
         pass
 
 
 class IAIFileManager(ABC):
     """Contract for managing document lifecycle on an AI provider's servers."""
+
+    def __init__(self, client: genai.Client) -> None: ...
 
     @abstractmethod
     async def upload_for_inference(self, document: LocalEdgarDocument) -> AIHostedFile:
@@ -79,6 +83,8 @@ class IAIFileManager(ABC):
 
 class IExtractorAgent(ABC):
     """Contract for AI-driven structured data extraction from documents."""
+
+    def __init__(self, client: genai.Client, model_name: str) -> None: ...
 
     @abstractmethod
     async def generate_structured_dossier(self, ai_file: AIHostedFile, system_prompt: str) -> str:

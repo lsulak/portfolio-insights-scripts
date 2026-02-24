@@ -2,10 +2,14 @@
 
 import asyncio
 from dataclasses import dataclass
+import json
 import logging
 import os
 import traceback
-from typing import Optional, List, Any
+from typing import Optional, List
+
+from google import genai
+from jinja2 import Template
 
 from helios.extraction_engine.commons import MAX_CHARS_PER_DOCUMENT
 from helios.extraction_engine.sec.api import LocalEdgarDocument, EdgarFormType
@@ -45,7 +49,7 @@ class EdgarExtractionResult:
 class EdgarExtractionPipeline:
     """Manages the complete Edgar (SEC filing) extraction and summarization workflow."""
 
-    def __init__(self, client, ticker: str, output_base_dir: str, force_resummarize: bool = False):
+    def __init__(self, client: genai.Client, ticker: str, output_base_dir: str, force_resummarize: bool = False):
         """Initialize the Edgar extraction pipeline.
 
         Args:
@@ -97,7 +101,7 @@ class EdgarExtractionPipeline:
         self._llm_semaphore = asyncio.Semaphore(GEMINI_MAX_PARALLEL_CALLS)
 
     async def _process_document(
-        self, doc: LocalEdgarDocument, agent_specs: Any, is_most_recent_of_its_type: bool
+        self, doc: LocalEdgarDocument, agent_specs: Template, is_most_recent_of_its_type: bool
     ) -> bool:
         """Process a single SEC document through the extraction pipeline.
 
@@ -137,9 +141,8 @@ class EdgarExtractionPipeline:
             # Save result
             os.makedirs(os.path.dirname(output_file), exist_ok=True)
             with open(output_file, "w", encoding="utf-8") as f:
-                # parsed_dict = json.loads(raw_json_string)
-                # minified_json = json.dumps(parsed_dict, separators=(',', ':')) # minimize structured_summary - the whitespaces
-                f.write(structured_summary)
+                validated_json = self._validate_and_minify_json(structured_summary)
+                f.write(validated_json)
 
             logger.info(f"✅ Saved summary to: {output_file}")
             return True
@@ -160,7 +163,20 @@ class EdgarExtractionPipeline:
                 except Exception as cleanup_err:
                     logger.warning(f"Cleanup failed for {ai_file.file_name}: {cleanup_err}")
 
-    def _prepare_agent_specs(self, form_type: str, base_specs: Any, is_most_recent: bool) -> str:
+    @staticmethod
+    def _validate_and_minify_json(raw_response: str) -> str:
+        """Validate AI response is valid JSON and minify it.
+
+        Raises:
+            ValueError: If the response is not valid JSON.
+        """
+        try:
+            parsed = json.loads(raw_response)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"AI returned invalid JSON: {e}") from e
+        return json.dumps(parsed, separators=(",", ":"), ensure_ascii=False)
+
+    def _prepare_agent_specs(self, form_type: EdgarFormType, base_specs: Template, is_most_recent: bool) -> str:
         """Prepare agent specifications for extraction.
 
         Args:
@@ -248,7 +264,7 @@ class EdgarExtractionPipeline:
         logger.info(f"🚀 Processing {len(extraction_tasks)} documents concurrently...")
 
         # Execute all tasks
-        results = await asyncio.gather(*extraction_tasks, return_exceptions=True)
+        results = await asyncio.gather(*extraction_tasks)
 
         # Calculate statistics
         successful = sum(1 for r in results if r is True)

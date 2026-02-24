@@ -35,7 +35,7 @@ class EdgarFetcher(IEdgarFetcher):
         return cutoff.strftime("%Y-%m-%d")
 
     async def fetch_latest_filings(
-        self, ticker: str, form_type: str, years_back: int
+        self, ticker: str, form_type: EdgarFormType, years_back: int
     ) -> Optional[List[LocalEdgarDocument]]:
         """Downloads filings asynchronously to prevent blocking the main thread.
 
@@ -56,7 +56,7 @@ class EdgarFetcher(IEdgarFetcher):
 
         processed_docs = []
         for curr_file in downloaded_files:
-            dir_of_curr_file = curr_file.split("/")[-2]  # just the parent dir
+            dir_of_curr_file = os.path.basename(os.path.dirname(curr_file))
             _, two_digits_submission_year, submission_order_for_the_year = dir_of_curr_file.split("-")
 
             # Parse 2-digit year correctly (handles years after 2068 rollover)
@@ -75,7 +75,7 @@ class EdgarFetcher(IEdgarFetcher):
             curr_extraction = LocalEdgarDocument(
                 ticker=ticker,
                 submission_year=four_digit_submission_year,
-                submission_order_for_the_year=submission_order_for_the_year,
+                submission_order_for_the_year=int(submission_order_for_the_year),
                 form_type=form_type,
                 file_path_raw=curr_file,
                 file_path_ai_ready=None,

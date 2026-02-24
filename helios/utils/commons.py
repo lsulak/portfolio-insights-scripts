@@ -1,11 +1,13 @@
 import logging
-from string import Template
+from pathlib import Path
 import time
+
+from jinja2 import Template
 
 logger = logging.getLogger(__name__)
 
 
-def load_agent_spec(spec_path: str) -> Template:
+def load_agent_spec(spec_path: Path | str) -> Template:
     """Load a Markdown agent spec and compile it into a Jinja2 template.
 
     The Markdown file is the prompt — no intermediate parsing needed.
@@ -17,8 +19,9 @@ def load_agent_spec(spec_path: str) -> Template:
         return Template(f.read())
 
 
-def generate_agent_spec(spec_template: Template, **substitution_keywords) -> str:
-    return spec_template.substitute(**substitution_keywords)
+def generate_agent_spec(spec_template: Template, **substitution_keywords: str) -> str:
+    """Render a Jinja2 agent spec template with the given variables."""
+    return spec_template.render(**substitution_keywords)
 
 
 def deep_research_execution_sync(client, model: str, agent_spec: str, polling_interval: int = 60) -> str:

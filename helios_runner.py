@@ -10,15 +10,15 @@ import os
 import sys
 
 from dotenv import load_dotenv
+
+load_dotenv()  # Must be called before helios imports that read env vars
+
 from google import genai
 
 from helios.extraction_engine.sec.extraction_workflow import EdgarExtractionPipeline
-from helios.utils.constants import GEMINI_API_KEY
-
-load_dotenv()  # load environment variables from .env file
-
 from helios.extraction_engine.earnings_call_transcription import EarningsCallTranscriptExtractor
 from helios.utils.cli_parser import parse_cli_args
+from helios.utils.constants import GEMINI_API_KEY
 
 CURR_SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -54,6 +54,7 @@ async def main(args) -> int:
     client = genai.Client(api_key=GEMINI_API_KEY)
 
     result = await EdgarExtractionPipeline(
+        client=client,
         ticker=args.ticker,
         output_base_dir=data_dir,
         force_resummarize=args.force_resummarize,

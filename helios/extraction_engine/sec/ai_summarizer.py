@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class GeminiFileManager(IAIFileManager):
     """Handles the lifecycle of large documents in the Gemini Files API."""
 
-    def __init__(self, client):
+    def __init__(self, client: genai.Client):
         self.client = client
 
     async def upload_for_inference(self, document: LocalEdgarDocument) -> AIHostedFile:
@@ -72,7 +72,7 @@ class GeminiFileManager(IAIFileManager):
 class ExtractorAgent(IExtractorAgent):
     """Executes the extraction prompt against the Gemini model."""
 
-    def __init__(self, client, model_name: str):
+    def __init__(self, client: genai.Client, model_name: str):
         self.client = client
         self.model_name = model_name
 

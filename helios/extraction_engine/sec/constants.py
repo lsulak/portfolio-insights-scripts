@@ -1,7 +1,8 @@
 """SEC-specific configuration - Filing types, extraction settings, and agent spec loading."""
 
 import os
-from string import Template
+
+from jinja2 import Template
 
 from helios.extraction_engine.commons import AGENT_SPECS_DIR
 from helios.extraction_engine.sec.api import EdgarFormType
