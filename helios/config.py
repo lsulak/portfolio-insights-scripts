@@ -2,8 +2,8 @@
 
 Configuration hierarchy (highest priority wins):
   CLI args  → Runtime user choices (--ticker, --force-resummarize)
-  .env      → Secrets and operator preferences (API keys, models, parallelism, data depth)
-  Python    → Engineering constants (retry tuning, temperature, rate limits, context window)
+  .env      → All operator settings (secrets, models, parallelism, data depth)
+  Python    → Engineering constants only (retry tuning, temperature, rate limits)
 
 Usage:
     from helios.config import GEMINI, SEC_EDGAR, AGENT_SPECS_DIR
@@ -21,20 +21,15 @@ from pathlib import Path
 # ==========================================
 # HELPERS
 # ==========================================
-def _env(key: str, default: str | None = None) -> str:
-    """Read an environment variable. Raises ValueError if required and missing."""
-    value = os.getenv(key, default)
-    if value is None:
+def _env(key: str) -> str:
+    """Read a required environment variable. Raises ValueError if missing."""
+    value = os.getenv(key)
+    if not value:
         raise ValueError(
             f"Missing required environment variable: {key}\n"
-            f"Set it in your .env file or with: export {key}='your-value'"
+            f"Copy .env.example to .env and fill in your values."
         )
     return value
-
-
-def _env_int(key: str, default: int) -> int:
-    """Read an optional integer environment variable with a fallback default."""
-    return int(os.getenv(key, str(default)))
 
 
 # ==========================================
@@ -42,30 +37,15 @@ def _env_int(key: str, default: int) -> int:
 # ==========================================
 @dataclass(frozen=True)
 class GeminiConfig:
-    """All Gemini API settings — secrets, models, resilience, and generation parameters.
+    """All Gemini API settings — from .env plus Python engineering constants."""
 
-    .env values:
-        GEMINI_API_KEY                 (required)
-        EXTRACTOR_MODEL                (default: gemini-2.5-flash-lite)
-        EARNINGS_CALL_ANALYZER_MODEL   (default: gemini-2.5-flash-lite)
-        GEMINI_MAX_PARALLEL_CALLS      (default: 3)
-
-    Python defaults (engineering constants — tuned once, rarely changed):
-        max_retries, retry_min_wait_seconds, retry_max_wait_seconds,
-        extractor_temperature, max_chars_per_document
-    """
-
-    # --- .env: secrets ---
+    # --- .env (required) ---
     api_key: str = field(repr=False)
-
-    # --- .env: model selection ---
-    extractor_model: str = "gemini-2.5-flash-lite"
-    earnings_call_model: str = "gemini-2.5-flash-lite"
-    market_analysis_model: str = "gemini-2.5-flash-lite"
-    sector_analysis_model: str = "gemini-2.5-flash-lite"
-
-    # --- .env: concurrency ---
-    max_parallel_calls: int = 3
+    extractor_model: str
+    earnings_call_model: str
+    market_analysis_model: str
+    sector_analysis_model: str
+    max_parallel_calls: int
 
     # --- Python: resilience (engineering constants) ---
     max_retries: int = 5
@@ -82,33 +62,17 @@ class GeminiConfig:
 # ==========================================
 @dataclass(frozen=True)
 class SecEdgarConfig:
-    """SEC EDGAR identity and data-depth preferences.
+    """SEC EDGAR identity and data-depth — all from .env."""
 
-    .env values:
-        MY_COMPANY_NAME              (required — SEC User-Agent compliance)
-        MY_EMAIL                     (required — SEC User-Agent compliance)
-        YEARS_BACK_10K               (default: 1)
-        YEARS_BACK_10Q               (default: 1)
-        YEARS_BACK_8K                (default: 1)
-        YEARS_BACK_DEF14A            (default: 1)
-        YEARS_BACK_FORM4             (default: 1)
-        YEARS_BACK_EARNINGS_CALLS    (default: 1)
-
-    Python defaults:
-        api_call_delay_seconds       (5 — SEC rate limit: 10 req/s)
-    """
-
-    # --- .env: identity (required by SEC EDGAR) ---
+    # --- .env (required) ---
     company_name: str
     email: str
-
-    # --- .env: data depth (how far back to fetch each filing type) ---
-    years_back_10k: int = 1
-    years_back_10q: int = 1
-    years_back_8k: int = 1
-    years_back_def14a: int = 1
-    years_back_form4: int = 1
-    years_back_earnings_calls: int = 1
+    years_back_10k: int
+    years_back_10q: int
+    years_back_8k: int
+    years_back_def14a: int
+    years_back_form4: int
+    years_back_earnings_calls: int
 
     # --- Python: rate limiting (engineering constant) ---
     api_call_delay_seconds: int = 5
@@ -131,20 +95,20 @@ DEFAULT_TICKER = os.getenv("TESTING_TICKER", "GOOGL")
 # ==========================================
 GEMINI = GeminiConfig(
     api_key=_env("GEMINI_API_KEY"),
-    extractor_model=_env("EXTRACTOR_MODEL", "gemini-2.5-flash-lite"),
-    earnings_call_model=_env("EARNINGS_CALL_ANALYZER_MODEL", "gemini-2.5-flash-lite"),
-    market_analysis_model=_env("MARKET_ANALYSIS_MODEL", "gemini-2.5-flash-lite"),
-    sector_analysis_model=_env("SECTOR_ANALYSIS_MODEL", "gemini-2.5-flash-lite"),
-    max_parallel_calls=_env_int("GEMINI_MAX_PARALLEL_CALLS", 3),
+    extractor_model=_env("EXTRACTOR_MODEL"),
+    earnings_call_model=_env("EARNINGS_CALL_ANALYZER_MODEL"),
+    market_analysis_model=_env("MARKET_ANALYSIS_MODEL"),
+    sector_analysis_model=_env("SECTOR_ANALYSIS_MODEL"),
+    max_parallel_calls=int(_env("GEMINI_MAX_PARALLEL_CALLS")),
 )
 
 SEC_EDGAR = SecEdgarConfig(
     company_name=_env("MY_COMPANY_NAME"),
     email=_env("MY_EMAIL"),
-    years_back_10k=_env_int("YEARS_BACK_10K", 1),
-    years_back_10q=_env_int("YEARS_BACK_10Q", 1),
-    years_back_8k=_env_int("YEARS_BACK_8K", 1),
-    years_back_def14a=_env_int("YEARS_BACK_DEF14A", 1),
-    years_back_form4=_env_int("YEARS_BACK_FORM4", 1),
-    years_back_earnings_calls=_env_int("YEARS_BACK_EARNINGS_CALLS", 1),
+    years_back_10k=int(_env("YEARS_BACK_10K")),
+    years_back_10q=int(_env("YEARS_BACK_10Q")),
+    years_back_8k=int(_env("YEARS_BACK_8K")),
+    years_back_def14a=int(_env("YEARS_BACK_DEF14A")),
+    years_back_form4=int(_env("YEARS_BACK_FORM4")),
+    years_back_earnings_calls=int(_env("YEARS_BACK_EARNINGS_CALLS")),
 )
