@@ -11,6 +11,9 @@ import sys
 
 from dotenv import load_dotenv
 
+from helios.extraction_engine.market_analyser import MarketAnalyser
+from helios.extraction_engine.sector_analyser import SectorAnalyser
+
 load_dotenv()  # Must be called before helios imports that read env vars
 
 from google import genai
@@ -61,6 +64,20 @@ async def main(args) -> int:
     ).run()
 
     EarningsCallAnalyser(
+        client=client,
+        output_base_dir=data_dir,
+        ticker=args.ticker,
+        force_resummarize=args.force_resummarize,
+    ).run()
+
+    SectorAnalyser(
+        client=client,
+        output_base_dir=data_dir,
+        ticker=args.ticker,
+        force_resummarize=args.force_resummarize,
+    ).run()
+
+    MarketAnalyser(
         client=client,
         output_base_dir=data_dir,
         ticker=args.ticker,
