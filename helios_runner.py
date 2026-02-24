@@ -11,17 +11,18 @@ import sys
 
 from dotenv import load_dotenv
 
-from helios.extraction_engine.market_analyser import MarketAnalyser
-from helios.extraction_engine.sector_analyser import SectorAnalyser
-
 load_dotenv()  # Must be called before helios imports that read env vars
 
 from google import genai
 
-from helios.extraction_engine.sec.edgar_analyser import EdgarExtractionPipeline
-from helios.extraction_engine.earnings_calls_analyser import EarningsCallAnalyser
-from helios.utils.cli_parser import parse_cli_args
 from helios.config import GEMINI
+from helios.extraction_engine.earnings_calls_analyser import EarningsCallAnalyser
+from helios.extraction_engine.market_analyser import MarketAnalyser
+from helios.extraction_engine.sec.edgar_analyser import EdgarExtractionPipeline
+from helios.extraction_engine.sector_analyser import SectorAnalyser
+from helios.utils.cli_parser import parse_cli_args
+
+logger = logging.getLogger(__name__)
 
 CURR_SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -56,35 +57,36 @@ async def main(args) -> int:
 
     client = genai.Client(api_key=GEMINI.api_key)
 
-    result = await EdgarExtractionPipeline(
-        client=client,
-        ticker=args.ticker,
-        output_base_dir=data_dir,
-        force_resummarize=args.force_resummarize,
-    ).run()
+    analyser_names = (
+        EdgarExtractionPipeline.__name__,
+        EarningsCallAnalyser.__name__,
+        SectorAnalyser.__name__,
+        MarketAnalyser.__name__,
+    )
+    common_kwargs = dict(client=client, output_base_dir=data_dir, ticker=args.ticker)
+    force_all = args.force_resummarize_all
 
-    EarningsCallAnalyser(
-        client=client,
-        output_base_dir=data_dir,
-        ticker=args.ticker,
-        force_resummarize=args.force_resummarize,
-    ).run()
+    # All 4 extraction engines run concurrently — failures are isolated
+    results = await asyncio.gather(
+        EdgarExtractionPipeline(**common_kwargs, force_resummarize=force_all or args.force_resummarize_edgar).run(),
+        EarningsCallAnalyser(**common_kwargs, force_resummarize=force_all or args.force_resummarize_earnings).run(),
+        SectorAnalyser(**common_kwargs, force_resummarize=force_all or args.force_resummarize_sector).run(),
+        MarketAnalyser(**common_kwargs, force_resummarize=force_all or args.force_resummarize_market).run(),
+        return_exceptions=True,
+    )
 
-    SectorAnalyser(
-        client=client,
-        output_base_dir=data_dir,
-        ticker=args.ticker,
-        force_resummarize=args.force_resummarize,
-    ).run()
+    # Report per-analyser outcomes
+    any_failed = False
+    for name, result in zip(analyser_names, results):
+        if isinstance(result, BaseException):
+            logger.error(f"❌ {name} failed: {type(result).__name__}: {result}")
+            any_failed = True
 
-    MarketAnalyser(
-        client=client,
-        output_base_dir=data_dir,
-        ticker=args.ticker,
-        force_resummarize=args.force_resummarize,
-    ).run()
+    edgar_result = results[0]
+    if isinstance(edgar_result, BaseException):
+        return 1
 
-    return 0 if result.all_passed else 1
+    return 1 if any_failed or not edgar_result.all_passed else 0
 
 
 if __name__ == "__main__":

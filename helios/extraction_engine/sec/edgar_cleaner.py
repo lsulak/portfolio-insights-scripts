@@ -171,7 +171,7 @@ class EdgarDocumentCleaner:
         output_path = os.path.join(
             self._target_dir,
             document.form_type,
-            f"{document.submission_year}_{document.submission_order_for_the_year}.html",
+            f"{document.submission_year}_{document.submission_order_for_the_year:06d}.html",
         )
 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)

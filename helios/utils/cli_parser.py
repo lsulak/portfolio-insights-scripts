@@ -24,9 +24,29 @@ def create_arg_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
-        "--force-resummarize",
+        "--force-resummarize-all",
         action="store_true",
-        help="Force re-summarization of all documents even if summaries already exist",
+        help="Force re-summarization of ALL analysers, even if outputs already exist",
+    )
+    parser.add_argument(
+        "--force-resummarize-edgar",
+        action="store_true",
+        help="Force re-summarization of SEC EDGAR filings only",
+    )
+    parser.add_argument(
+        "--force-resummarize-earnings",
+        action="store_true",
+        help="Force re-summarization of earnings call analysis only",
+    )
+    parser.add_argument(
+        "--force-resummarize-market",
+        action="store_true",
+        help="Force re-summarization of market analysis only",
+    )
+    parser.add_argument(
+        "--force-resummarize-sector",
+        action="store_true",
+        help="Force re-summarization of sector analysis only",
     )
 
     return parser

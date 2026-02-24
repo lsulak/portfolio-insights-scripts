@@ -26,8 +26,7 @@ def _env(key: str) -> str:
     value = os.getenv(key)
     if not value:
         raise ValueError(
-            f"Missing required environment variable: {key}\n"
-            f"Copy .env.example to .env and fill in your values."
+            f"Missing required environment variable: {key}\n" f"Copy .env.example to .env and fill in your values."
         )
     return value
 

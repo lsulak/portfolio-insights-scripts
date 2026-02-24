@@ -1,75 +1,36 @@
-import logging
+"""Earnings Call analyser — Deep Research Agent for earnings transcripts."""
+
 import os
-import time
+from datetime import datetime
 
-from google import genai
-
-from helios.config import AGENT_SPECS_DIR, GEMINI, SEC_EDGAR
-from helios.utils.commons import deep_research_execution_sync, generate_agent_spec, load_agent_spec
-
-AGENT_SPECS_FILEPATH = AGENT_SPECS_DIR / "earnings_calls_analysis.md"
-
-logger = logging.getLogger(__name__)
+from helios.config import GEMINI, SEC_EDGAR
+from helios.utils.commons import DeepResearchAnalyser
 
 
-class EarningsCallAnalyser:
-    """Orchestrates the extraction of earnings call transcripts using Gemini Deep Research Agent."""
+class EarningsCallAnalyser(DeepResearchAnalyser):
+    """Earnings call transcript analysis via Gemini Deep Research Agent."""
 
-    def __init__(self, client: genai.Client, output_base_dir: str, ticker: str, force_resummarize: bool = False):
-        """Initialize the extractor with necessary parameters."""
+    OUT_DIR_NAME = "earnings_calls_synthesis"
+    AGENT_SPEC_FILENAME = "earnings_calls_analysis.md"
 
-        self.client = client
-        self.output_base_dir = output_base_dir
-        self.ticker = ticker
-        self.force_resummarize = force_resummarize
+    def _get_model(self) -> str:
+        return GEMINI.earnings_call_model
 
-    @staticmethod
-    def construct_report_filename(output_base_dir: str, ticker: str, years_back: int) -> str:
-        """Construct the output filename for the earnings call synthesis report."""
-        curr_quarter = ((int(time.strftime("%m")) - 1) // 3) + 1
-        curr_year = time.strftime("%Y")
-
-        starting_year = int(time.strftime("%Y")) - years_back
-
-        output_report_basedir = os.path.join(output_base_dir, ticker, "earnings_calls_synthesis")
+    def _build_output_path(self) -> str:
+        year, quarter = self._current_quarter()
+        years_back = SEC_EDGAR.years_back_earnings_calls
+        starting_year = int(year) - years_back
 
         return os.path.join(
-            output_report_basedir, f"from_{starting_year}Q{curr_quarter}_to_{curr_year}Q{curr_quarter}.md"
+            self._ticker_output_dir(self.OUT_DIR_NAME),
+            f"from_{starting_year}Q{quarter}_to_{year}Q{quarter}.md",
         )
 
-    @staticmethod
-    def construct_agent_spec(ticker: str, years_back: int) -> str:
-        """Construct the keyword dictionary for agent spec substitution."""
-        current_date = time.strftime("%Y-%m-%d")
-
-        starting_year = int(time.strftime("%Y")) - years_back
-        starting_date = f"{starting_year}{time.strftime('-%m-%d')}"
-
-        agent_spec_keywords = {"TICKER": ticker, "FROM_DATE": starting_date, "TO_DATE": current_date}
-        agent_spec_template = load_agent_spec(AGENT_SPECS_FILEPATH)
-        agent_spec = generate_agent_spec(agent_spec_template, **agent_spec_keywords)
-
-        return agent_spec
-
-    def run(self) -> None:
-        """Extract and summarize earnings call transcripts using Gemini Deep Research Agent."""
-        # Prepare date variables for agent spec and filename
+    def _build_agent_spec(self) -> str:
+        now = datetime.now()
         years_back = SEC_EDGAR.years_back_earnings_calls
+        starting_date = f"{now.year - years_back}{now.strftime('-%m-%d')}"
 
-        output_filename = self.construct_report_filename(self.output_base_dir, self.ticker, years_back)
-
-        # Check if report already exists and skip if not forcing resummarization
-        if not self.force_resummarize and os.path.exists(output_filename):
-            logger.info(f"Earnings call summary already exists at {output_filename}. Skipping extraction.")
-            return
-
-        agent_spec = self.construct_agent_spec(self.ticker, years_back)
-        produced_insight = deep_research_execution_sync(
-            self.client, model=GEMINI.earnings_call_model, agent_spec=agent_spec
+        return self._render_agent_spec(
+            self.AGENT_SPEC_FILENAME, TICKER=self.ticker, FROM_DATE=starting_date, TO_DATE=now.strftime("%Y-%m-%d")
         )
-
-        os.makedirs(os.path.dirname(output_filename), exist_ok=True)
-        with open(output_filename, "w", encoding="utf-8") as f:
-            f.write(produced_insight)
-
-        logger.info(f"Earnings Calls summary written to file '{output_filename}'")

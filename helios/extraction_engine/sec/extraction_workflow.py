@@ -42,13 +42,13 @@ class EdgarExtractionResult:
 class EdgarExtractionPipeline:
     """Manages the complete Edgar (SEC filing) extraction and summarization workflow."""
 
-    def __init__(self, client: genai.Client, output_base_dir: str, ticker: str, force_resummarize: bool = False):
+    def __init__(self, client: genai.Client, ticker: str, output_base_dir: str, force_resummarize: bool = False):
         """Initialize the Edgar extraction pipeline.
 
         Args:
             client: Gemini API client
-            output_base_dir: Base directory for output files
             ticker: Stock ticker symbol
+            output_base_dir: Base directory for output files
             force_resummarize: Whether to force re-summarization of existing files
         """
         self.client = client
@@ -106,7 +106,7 @@ class EdgarExtractionPipeline:
         Returns:
             True if successful, False otherwise
         """
-        summary_filename = f"{doc.submission_year}_{doc.submission_order_for_the_year:06d}.json"
+        summary_filename = f"{doc.submission_year}_{doc.submission_order_for_the_year}.json"
         output_file = os.path.join(self.dir_summarized, doc.form_type, summary_filename)
 
         # Early exit if summary exists and no force flag
