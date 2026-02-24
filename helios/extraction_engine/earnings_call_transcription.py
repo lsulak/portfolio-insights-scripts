@@ -2,6 +2,8 @@ import logging
 import os
 import time
 
+from google import genai
+
 from helios.extraction_engine.commons import AGENT_SPECS_DIR, YEARS_BACK_EARNINGS_CALLS
 from helios.utils.commons import deep_research_execution_sync, generate_agent_spec, load_agent_spec
 from helios.utils.constants import EARNINGS_CALL_ANALYZER_MODEL
@@ -14,7 +16,7 @@ logger = logging.getLogger(__name__)
 class EarningsCallTranscriptExtractor:
     """Orchestrates the extraction of earnings call transcripts using Gemini Deep Research Agent."""
 
-    def __init__(self, client, output_base_dir: str, ticker: str, force_resummarize: bool = False):
+    def __init__(self, client: genai.Client, output_base_dir: str, ticker: str, force_resummarize: bool = False):
         """Initialize the extractor with necessary parameters."""
 
         self.client = client
@@ -37,7 +39,7 @@ class EarningsCallTranscriptExtractor:
         )
 
     @staticmethod
-    def construct_agent_spec(ticker: str, years_back: int) -> dict[str, str]:
+    def construct_agent_spec(ticker: str, years_back: int) -> str:
         """Construct the keyword dictionary for agent spec substitution."""
         current_date = time.strftime("%Y-%m-%d")
 

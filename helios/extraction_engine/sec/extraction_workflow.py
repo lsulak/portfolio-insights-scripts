@@ -6,7 +6,7 @@ import json
 import logging
 import os
 import traceback
-from typing import Optional, List
+from typing import Optional
 
 from google import genai
 from jinja2 import Template
@@ -211,7 +211,7 @@ class EdgarExtractionPipeline:
             logger.debug(f"Bypassing cleaner for {doc.file_path_raw}")
             return doc.file_path_raw
 
-    async def _fetch_and_queue_documents(self) -> List[asyncio.Task]:
+    async def _fetch_and_queue_documents(self) -> list:
         """Fetch documents from SEC and queue them for processing.
 
         Returns:

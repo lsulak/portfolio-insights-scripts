@@ -9,7 +9,7 @@ from typing import List, Optional
 
 from sec_edgar_downloader import Downloader
 
-from helios.extraction_engine.sec.api import IEdgarFetcher, LocalEdgarDocument
+from helios.extraction_engine.sec.api import EdgarFormType, IEdgarFetcher, LocalEdgarDocument
 
 logger = logging.getLogger(__name__)
 

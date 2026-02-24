@@ -6,7 +6,7 @@ import logging
 import google.api_core.exceptions as google_errors
 from google import genai
 from google.genai import types, errors
-from tenacity import before_sleep_log, retry, wait_exponential, stop_after_attempt, retry_if_exception_type
+from tenacity import before_sleep_log, retry, wait_exponential, stop_after_attempt, retry_if_exception
 
 from helios.extraction_engine.sec.api import IAIFileManager, IExtractorAgent, LocalEdgarDocument, AIHostedFile
 from helios.extraction_engine.sec.constants import SEC_EXTRACTOR_TEMPERATURE
@@ -81,16 +81,20 @@ class ExtractorAgent(IExtractorAgent):
         for model in self.client.models.list():
             logger.info(f"  - {model}")
 
+    @staticmethod
+    def _is_retryable(exception: BaseException) -> bool:
+        """Only retry on transient errors, not permanent client errors like 400/403."""
+        if isinstance(exception, (errors.ServerError, ConnectionError, TimeoutError)):
+            return True
+        if isinstance(exception, google_errors.GoogleAPICallError):
+            return True
+        if isinstance(exception, errors.ClientError):
+            # Only retry rate-limit (429) and request-timeout (408)
+            return getattr(exception, "code", None) in (408, 429)
+        return False
+
     @retry(
-        retry=retry_if_exception_type(
-            (
-                errors.ServerError,  # 500, 503 — Google's internal errors
-                errors.ClientError,  # 429 — Rate limit (also a ClientError in google-genai SDK)
-                google_errors.GoogleAPICallError,  # Legcy API errors
-                ConnectionError,  # Network failures
-                TimeoutError,  # Request timeouts
-            )
-        ),
+        retry=retry_if_exception(_is_retryable),
         wait=wait_exponential(
             multiplier=4,
             min=GEMINI_RETRY_MIN_WAIT_SECONDS,
@@ -121,4 +125,11 @@ class ExtractorAgent(IExtractorAgent):
             contents=[file_ref, "Extract the required data according to the system instructions."],
             config=config,
         )
+
+        if response.text is None:
+            raise ValueError(
+                f"Gemini returned empty response for {ai_file.file_name}. "
+                f"Possible safety filter or content policy block."
+            )
+
         return response.text
