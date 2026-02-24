@@ -31,7 +31,7 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--force-resummarize-edgar",
         action="store_true",
-        help="Force re-summarization of SEC EDGAR filings only",
+        help="Force re-summarization of Edgar filings only",
     )
     parser.add_argument(
         "--force-resummarize-earnings",

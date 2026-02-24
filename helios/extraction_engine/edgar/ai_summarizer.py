@@ -8,7 +8,7 @@ from google import genai
 from google.genai import types, errors
 from tenacity import before_sleep_log, retry, wait_exponential, stop_after_attempt, retry_if_exception
 
-from helios.extraction_engine.sec.api import IAIFileManager, IExtractorAgent, LocalEdgarDocument, AIHostedFile
+from helios.extraction_engine.edgar.api import IAIFileManager, IExtractorAgent, LocalEdgarDocument, AIHostedFile
 from helios.config import GEMINI
 
 logger = logging.getLogger(__name__)

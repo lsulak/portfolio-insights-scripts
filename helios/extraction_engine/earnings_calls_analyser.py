@@ -3,7 +3,7 @@
 import os
 from datetime import datetime
 
-from helios.config import GEMINI, SEC_EDGAR
+from helios.config import GEMINI, EDGAR
 from helios.utils.commons import DeepResearchAnalyser
 
 
@@ -18,7 +18,7 @@ class EarningsCallAnalyser(DeepResearchAnalyser):
 
     def _build_output_path(self) -> str:
         year, quarter = self._current_quarter()
-        years_back = SEC_EDGAR.years_back_earnings_calls
+        years_back = EDGAR.years_back_earnings_calls
         starting_year = int(year) - years_back
 
         return os.path.join(
@@ -28,7 +28,7 @@ class EarningsCallAnalyser(DeepResearchAnalyser):
 
     def _build_agent_spec(self) -> str:
         now = datetime.now()
-        years_back = SEC_EDGAR.years_back_earnings_calls
+        years_back = EDGAR.years_back_earnings_calls
         starting_date = f"{now.year - years_back}{now.strftime('-%m-%d')}"
 
         return self._render_agent_spec(

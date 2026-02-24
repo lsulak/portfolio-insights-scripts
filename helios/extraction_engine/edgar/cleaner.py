@@ -1,16 +1,16 @@
-"""SEC Document Cleaner - Heuristic-based cleaning of raw SEC filings for LLM consumption."""
+"""Edgar Document Cleaner - Heuristic-based cleaning of raw Edgar filings for LLM consumption."""
 
 import logging
 import os
 import re
 
-from helios.extraction_engine.sec.api import LocalEdgarDocument
+from helios.extraction_engine.edgar.domain import LocalEdgarDocument
 
 logger = logging.getLogger(__name__)
 
 
 class EdgarDocumentCleaner:
-    """Strips binary bloat and HTML noise from raw Edgar (SEC) filings while preserving
+    """Strips binary bloat and HTML noise from raw Edgar filings while preserving
     financial tables and narrative structure for downstream AI consumption."""
 
     def __init__(self, target_dir: str):
@@ -40,7 +40,7 @@ class EdgarDocumentCleaner:
 
     # 1.5B The Geometric Entropy Filter
     #   Matches 10+ consecutive lines of 60+ characters with NO lowercase letters.
-    #   It is mathematically impossible for this to be human SEC narrative.
+    #   It is mathematically impossible for this to be human Edgar narrative.
     PATTERN_ENTROPY = re.compile(r'(?:[A-Z0-9!@#$%^&*()_\-+[\]{}\\/|<>?~`\'":;,. ]{60,}\r?\n){10,}')
 
     # 2. Base64 Images
@@ -75,7 +75,7 @@ class EdgarDocumentCleaner:
     # ==========================================
 
     def clean_and_minify(self, document: LocalEdgarDocument, max_chars: int = 950_000) -> str:
-        """Clean a raw Edgar (SEC) filing for AI consumption.
+        """Clean a raw Edgar filing for AI consumption.
 
         Strips binary bloat and converts remaining HTML to LLM-native text,
         preserving financial tables and document hierarchy before truncation.

@@ -1,4 +1,4 @@
-"""SEC Filing Fetcher - Downloads filings from the SEC EDGAR database."""
+"""Edgar Filing Fetcher - Downloads filings from the Edgar database."""
 
 import asyncio
 import glob
@@ -9,15 +9,15 @@ from typing import List, Optional
 
 from sec_edgar_downloader import Downloader
 
-from helios.extraction_engine.sec.api import EdgarFormType, IEdgarFetcher, LocalEdgarDocument
+from helios.extraction_engine.edgar.domain import EdgarFormType, LocalEdgarDocument
 
 logger = logging.getLogger(__name__)
 
 
-class EdgarFetcher(IEdgarFetcher):
-    """Downloads SEC filings from the EDGAR database.
+class EdgarFetcher:
+    """Downloads filings from the Edgar database.
 
-    The SEC requires a User-Agent string formatted as "Company Name Email"
+    Edgar requires a User-Agent string formatted as "Company Name Email"
     to avoid blocking. Rate limits: 10 requests/second max.
     """
 
@@ -39,10 +39,10 @@ class EdgarFetcher(IEdgarFetcher):
     ) -> Optional[List[LocalEdgarDocument]]:
         """Downloads filings asynchronously to prevent blocking the main thread.
 
-        Note: The SEC rate limits connections to 10 requests/second.
+        Note: Edgar rate limits connections to 10 requests/second.
         """
         cutoff_date = self._get_report_cutoff_date(years_back)
-        logger.info(f"[SEC] Downloading Form '{form_type}' for {ticker} filed after {cutoff_date}...")
+        logger.info(f"[Edgar] Downloading Form '{form_type}' for {ticker} filed after {cutoff_date}...")
 
         await asyncio.to_thread(self.downloader.get, form_type, ticker, after=cutoff_date)
 
@@ -51,7 +51,7 @@ class EdgarFetcher(IEdgarFetcher):
         downloaded_files = glob.glob(search_pattern)
 
         if not downloaded_files:
-            logger.warning(f"[SEC] No {form_type} found for {ticker}.")
+            logger.warning(f"[Edgar] No {form_type} found for {ticker}.")
             return None
 
         processed_docs = []
@@ -68,7 +68,7 @@ class EdgarFetcher(IEdgarFetcher):
                 four_digit_submission_year = parsed_year
 
             logger.debug(
-                f"[SEC] Downloaded file for {ticker}, {form_type}, "
+                f"[Edgar] Downloaded file for {ticker}, {form_type}, "
                 f"submission year: {four_digit_submission_year}, order: {submission_order_for_the_year}"
             )
 
@@ -79,7 +79,7 @@ class EdgarFetcher(IEdgarFetcher):
                 form_type=form_type,
                 file_path_raw=curr_file,
                 file_path_ai_ready=None,
-                mime_type="text/plain",  # SEC primary submissions are SGML/Text
+                mime_type="text/plain",  # Edgar primary submissions are SGML/Text
             )
             processed_docs.append(curr_extraction)
 

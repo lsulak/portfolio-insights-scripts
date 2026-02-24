@@ -17,8 +17,8 @@ from google import genai
 
 from helios.config import GEMINI
 from helios.extraction_engine.earnings_calls_analyser import EarningsCallAnalyser
+from helios.extraction_engine.edgar_analyser import EdgarExtractionPipeline
 from helios.extraction_engine.market_analyser import MarketAnalyser
-from helios.extraction_engine.sec.edgar_analyser import EdgarExtractionPipeline
 from helios.extraction_engine.sector_analyser import SectorAnalyser
 from helios.utils.cli_parser import parse_cli_args
 

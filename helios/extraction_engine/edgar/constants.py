@@ -7,7 +7,7 @@ All environment-driven configuration lives in helios.config.
 from jinja2 import Template
 
 from helios.config import AGENT_SPECS_DIR, SEC_EDGAR
-from helios.extraction_engine.sec.api import EdgarFormType
+from helios.extraction_engine.edgar.api import EdgarFormType
 from helios.utils.commons import load_agent_spec
 
 # ==========================================

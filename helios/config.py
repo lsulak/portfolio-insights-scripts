@@ -6,7 +6,7 @@ Configuration hierarchy (highest priority wins):
   Python    → Engineering constants only (retry tuning, temperature, rate limits)
 
 Usage:
-    from helios.config import GEMINI, SEC_EDGAR, AGENT_SPECS_DIR
+    from helios.config import GEMINI, EDGAR, AGENT_SPECS_DIR
 
 Important:
     load_dotenv() MUST be called before importing this module.
@@ -57,11 +57,11 @@ class GeminiConfig:
 
 
 # ==========================================
-# SEC EDGAR DATA SOURCE
+# EDGAR DATA SOURCE
 # ==========================================
 @dataclass(frozen=True)
-class SecEdgarConfig:
-    """SEC EDGAR identity and data-depth — all from .env."""
+class EdgarConfig:
+    """Edgar identity and data-depth — all from .env."""
 
     # --- .env (required) ---
     company_name: str
@@ -101,7 +101,7 @@ GEMINI = GeminiConfig(
     max_parallel_calls=int(_env("GEMINI_MAX_PARALLEL_CALLS")),
 )
 
-SEC_EDGAR = SecEdgarConfig(
+EDGAR = EdgarConfig(
     company_name=_env("MY_COMPANY_NAME"),
     email=_env("MY_EMAIL"),
     years_back_10k=int(_env("YEARS_BACK_10K")),
