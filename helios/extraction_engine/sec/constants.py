@@ -1,11 +1,11 @@
 """SEC-specific configuration - Filing types, extraction settings, and agent spec loading."""
 
 import os
-from pathlib import Path
+from string import Template
 
-from jinja2 import Template
-
+from helios.extraction_engine.commons import AGENT_SPECS_DIR
 from helios.extraction_engine.sec.api import EdgarFormType
+from helios.utils.commons import load_agent_spec
 
 # ==========================================
 # SEC EXTRACTION SETTINGS
@@ -16,16 +16,12 @@ SEC_EXTRACTOR_TEMPERATURE = 0.0
 # https://www.sec.gov/about/webmaster-frequently-asked-questions#code-support
 SEC_API_CALL_DELAY = 5
 
-# Context window size × 4 + buffer for prompt and response
-MAX_CHARS_PER_DOCUMENT = 900_000
-
-# ==========================================
-# AGENT SPEC LOADING (Markdown + Jinja2)
-# ==========================================
-_AGENT_SPECS_DIR = Path(__file__).resolve().parent.parent / "agent_specs"
 
 # Additional extraction context injected into the most recent 10-K only
-AGENT_ADDITIONS_FIRST_10K_ONLY = "- Business: the core business model.\n- Risk Factors: the risk factors."
+AGENT_ADDITIONS_FIRST_10K_ONLY = """
+    - Business: summary of extracted data from the business section, focused on the company's business description, including key products/services, markets, and competitive landscape. 
+    - Risk Factors: summary of extracted data from the risk factors section.
+""".strip()
 
 # Map each form type to its Markdown spec filename
 _FORM_TO_SPEC_FILE = {
@@ -37,20 +33,11 @@ _FORM_TO_SPEC_FILE = {
 }
 
 
-def _load_agent_spec(filename: str) -> Template:
-    """Load a Markdown agent spec and compile it into a Jinja2 template.
-
-    The Markdown file is the prompt — no intermediate parsing needed.
-    Jinja2 variables (e.g. {{ business_and_risk }}) are resolved at render time.
-    """
-    spec_path = _AGENT_SPECS_DIR / filename
-    with open(spec_path, "r", encoding="utf-8") as f:
-        return Template(f.read())
-
-
 def _load_all_agent_specs() -> dict[EdgarFormType, Template]:
     """Load all SEC agent specs from Markdown files into Jinja2 templates."""
-    return {form_type: _load_agent_spec(filename) for form_type, filename in _FORM_TO_SPEC_FILE.items()}
+    return {
+        form_type: load_agent_spec(AGENT_SPECS_DIR / filename) for form_type, filename in _FORM_TO_SPEC_FILE.items()
+    }
 
 
 SEC_FORM_TO_AGENT_SPEC: dict[EdgarFormType, Template] = _load_all_agent_specs()

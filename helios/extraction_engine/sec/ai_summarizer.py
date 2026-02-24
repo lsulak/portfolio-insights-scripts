@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 class GeminiFileManager(IAIFileManager):
     """Handles the lifecycle of large documents in the Gemini Files API."""
 
-    def __init__(self, api_key: str):
-        self.client = genai.Client(api_key=api_key)
+    def __init__(self, client):
+        self.client = client
 
     async def upload_for_inference(self, document: LocalEdgarDocument) -> AIHostedFile:
         """Uploads the file to Google's servers.
@@ -72,8 +72,8 @@ class GeminiFileManager(IAIFileManager):
 class ExtractorAgent(IExtractorAgent):
     """Executes the extraction prompt against the Gemini model."""
 
-    def __init__(self, api_key: str, model_name: str):
-        self.client = genai.Client(api_key=api_key)
+    def __init__(self, client, model_name: str):
+        self.client = client
         self.model_name = model_name
 
     def list_available_models(self):

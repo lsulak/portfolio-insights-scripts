@@ -1,11 +1,13 @@
 """Edgar (SEC Filing) extraction pipeline - Orchestrates the complete extraction workflow."""
 
 import asyncio
+from dataclasses import dataclass
 import logging
 import os
 import traceback
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Any
 
+from helios.extraction_engine.commons import MAX_CHARS_PER_DOCUMENT
 from helios.extraction_engine.sec.api import LocalEdgarDocument, EdgarFormType
 from helios.extraction_engine.sec.fetcher import EdgarFetcher
 from helios.extraction_engine.sec.cleaner import EdgarDocumentCleaner
@@ -15,13 +17,11 @@ from helios.extraction_engine.sec.constants import (
     SEC_FORM_TO_YEARS_BACK,
     SEC_API_CALL_DELAY,
     SEC_FORMS_TO_CLEAN,
-    MAX_CHARS_PER_DOCUMENT,
     AGENT_ADDITIONS_FIRST_10K_ONLY,
 )
 from helios.utils.constants import (
     MY_COMPANY_NAME,
     MY_EMAIL,
-    GEMINI_API_KEY,
     EXTRACTOR_MODEL,
     GEMINI_MAX_PARALLEL_CALLS,
 )
@@ -29,17 +29,32 @@ from helios.utils.constants import (
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class EdgarExtractionResult:
+    """Outcome of an extraction pipeline run."""
+
+    total: int
+    successful: int
+    failed: int
+
+    @property
+    def all_passed(self) -> bool:
+        return self.failed == 0
+
+
 class EdgarExtractionPipeline:
     """Manages the complete Edgar (SEC filing) extraction and summarization workflow."""
 
-    def __init__(self, ticker: str, output_base_dir: str, force_resummarize: bool = False):
+    def __init__(self, client, ticker: str, output_base_dir: str, force_resummarize: bool = False):
         """Initialize the Edgar extraction pipeline.
 
         Args:
+            client: Gemini API client
             ticker: Stock ticker symbol
             output_base_dir: Base directory for output files
             force_resummarize: Whether to force re-summarization of existing files
         """
+        self.client = client
         self.ticker = ticker
         self.output_base_dir = output_base_dir
         self.force_resummarize = force_resummarize
@@ -77,8 +92,8 @@ class EdgarExtractionPipeline:
             company_name=MY_COMPANY_NAME, email_address=MY_EMAIL, download_dir=self.dir_raw
         )
         self._edgar_cleaner = EdgarDocumentCleaner(target_dir=self.dir_minified)
-        self._gemini_file_manager = GeminiFileManager(api_key=GEMINI_API_KEY)
-        self._gemini_extractor = ExtractorAgent(api_key=GEMINI_API_KEY, model_name=EXTRACTOR_MODEL)
+        self._gemini_file_manager = GeminiFileManager(self.client)
+        self._gemini_extractor = ExtractorAgent(self.client, model_name=EXTRACTOR_MODEL)
         self._llm_semaphore = asyncio.Semaphore(GEMINI_MAX_PARALLEL_CALLS)
 
     async def _process_document(
@@ -122,6 +137,8 @@ class EdgarExtractionPipeline:
             # Save result
             os.makedirs(os.path.dirname(output_file), exist_ok=True)
             with open(output_file, "w", encoding="utf-8") as f:
+                # parsed_dict = json.loads(raw_json_string)
+                # minified_json = json.dumps(parsed_dict, separators=(',', ':')) # minimize structured_summary - the whitespaces
                 f.write(structured_summary)
 
             logger.info(f"✅ Saved summary to: {output_file}")
@@ -212,11 +229,11 @@ class EdgarExtractionPipeline:
 
         return tasks
 
-    async def run(self) -> Dict[str, int]:
+    async def run(self) -> EdgarExtractionResult:
         """Execute the complete extraction pipeline.
 
         Returns:
-            Dictionary with execution statistics
+            EdgarExtractionResult with execution statistics
         """
         logger.info(f"🚀 Starting SEC Extraction Pipeline for {self.ticker}")
 
@@ -226,7 +243,7 @@ class EdgarExtractionPipeline:
 
         if not extraction_tasks:
             logger.warning(f"No documents to process for {self.ticker}")
-            return {"total": 0, "successful": 0, "failed": 0}
+            return EdgarExtractionResult(total=0, successful=0, failed=0)
 
         logger.info(f"🚀 Processing {len(extraction_tasks)} documents concurrently...")
 
@@ -242,4 +259,8 @@ class EdgarExtractionPipeline:
         if failed > 0:
             logger.error(f"❌ Failed: {failed}/{len(results)}")
 
-        return {"total": len(results), "successful": successful, "failed": failed}
+        return EdgarExtractionResult(
+            total=len(results),
+            successful=successful,
+            failed=failed,
+        )

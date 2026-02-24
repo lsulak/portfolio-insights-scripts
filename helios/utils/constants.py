@@ -23,6 +23,7 @@ TESTING_TICKER = get_env_or_error("TESTING_TICKER")
 
 # Model selection
 EXTRACTOR_MODEL = get_env_or_error("EXTRACTOR_MODEL")
+EARNINGS_CALL_ANALYZER_MODEL = get_env_or_error("EARNINGS_CALL_ANALYZER_MODEL")
 
 # ==========================================
 # GEMINI API RESILIENCE & CONCURRENCY
