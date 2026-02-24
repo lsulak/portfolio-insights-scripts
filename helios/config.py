@@ -61,6 +61,8 @@ class GeminiConfig:
     # --- .env: model selection ---
     extractor_model: str = "gemini-2.5-flash-lite"
     earnings_call_model: str = "gemini-2.5-flash-lite"
+    market_analysis_model: str = "gemini-2.5-flash-lite"
+    sector_analysis_model: str = "gemini-2.5-flash-lite"
 
     # --- .env: concurrency ---
     max_parallel_calls: int = 3
@@ -131,6 +133,8 @@ GEMINI = GeminiConfig(
     api_key=_env("GEMINI_API_KEY"),
     extractor_model=_env("EXTRACTOR_MODEL", "gemini-2.5-flash-lite"),
     earnings_call_model=_env("EARNINGS_CALL_ANALYZER_MODEL", "gemini-2.5-flash-lite"),
+    market_analysis_model=_env("MARKET_ANALYSIS_MODEL", "gemini-2.5-flash-lite"),
+    sector_analysis_model=_env("SECTOR_ANALYSIS_MODEL", "gemini-2.5-flash-lite"),
     max_parallel_calls=_env_int("GEMINI_MAX_PARALLEL_CALLS", 3),
 )
 

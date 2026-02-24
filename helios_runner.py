@@ -15,8 +15,8 @@ load_dotenv()  # Must be called before helios imports that read env vars
 
 from google import genai
 
-from helios.extraction_engine.sec.extraction_workflow import EdgarExtractionPipeline
-from helios.extraction_engine.earnings_call_transcription import EarningsCallTranscriptExtractor
+from helios.extraction_engine.sec.edgar_analyser import EdgarExtractionPipeline
+from helios.extraction_engine.earnings_calls_analyser import EarningsCallAnalyser
 from helios.utils.cli_parser import parse_cli_args
 from helios.config import GEMINI
 
@@ -60,7 +60,7 @@ async def main(args) -> int:
         force_resummarize=args.force_resummarize,
     ).run()
 
-    EarningsCallTranscriptExtractor(
+    EarningsCallAnalyser(
         client=client,
         output_base_dir=data_dir,
         ticker=args.ticker,

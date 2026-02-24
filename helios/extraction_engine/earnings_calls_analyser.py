@@ -7,12 +7,12 @@ from google import genai
 from helios.config import AGENT_SPECS_DIR, GEMINI, SEC_EDGAR
 from helios.utils.commons import deep_research_execution_sync, generate_agent_spec, load_agent_spec
 
-AGENT_SPECS_FILEPATH = AGENT_SPECS_DIR / "earnings_calls_transcript_summary.md"
+AGENT_SPECS_FILEPATH = AGENT_SPECS_DIR / "earnings_calls_analysis.md"
 
 logger = logging.getLogger(__name__)
 
 
-class EarningsCallTranscriptExtractor:
+class EarningsCallAnalyser:
     """Orchestrates the extraction of earnings call transcripts using Gemini Deep Research Agent."""
 
     def __init__(self, client: genai.Client, output_base_dir: str, ticker: str, force_resummarize: bool = False):
@@ -25,13 +25,13 @@ class EarningsCallTranscriptExtractor:
 
     @staticmethod
     def construct_report_filename(output_base_dir: str, ticker: str, years_back: int) -> str:
-        """Construct the output filename for the earnings call summary report."""
+        """Construct the output filename for the earnings call synthesis report."""
         curr_quarter = ((int(time.strftime("%m")) - 1) // 3) + 1
         curr_year = time.strftime("%Y")
 
         starting_year = int(time.strftime("%Y")) - years_back
 
-        output_report_basedir = os.path.join(output_base_dir, ticker, "earnings_calls_summary")
+        output_report_basedir = os.path.join(output_base_dir, ticker, "earnings_calls_synthesis")
 
         return os.path.join(
             output_report_basedir, f"from_{starting_year}Q{curr_quarter}_to_{curr_year}Q{curr_quarter}.md"
