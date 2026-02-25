@@ -23,7 +23,7 @@ class EarningsCallAnalyser(DeepResearchAnalyser):
 
         return os.path.join(
             self._ticker_output_dir(self.OUT_DIR_NAME),
-            f"from_{starting_year}Q{quarter}_to_{year}Q{quarter}.md",
+            f"from_{starting_year}-Q{quarter}_to_{year}-Q{quarter}.md",
         )
 
     def _build_agent_spec(self) -> str:

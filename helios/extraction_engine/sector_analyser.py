@@ -17,7 +17,7 @@ class SectorAnalyser(DeepResearchAnalyser):
 
     def _build_output_path(self) -> str:
         year, quarter = self._current_quarter()
-        return os.path.join(self._ticker_output_dir(self.OUT_DIR_NAME), f"report_during_{year}Q{quarter}.md")
+        return os.path.join(self._ticker_output_dir(self.OUT_DIR_NAME), f"report_during_{year}-Q{quarter}.md")
 
     def _build_agent_spec(self) -> str:
         return self._render_agent_spec(self.AGENT_SPEC_FILENAME, TICKER=self.ticker)
