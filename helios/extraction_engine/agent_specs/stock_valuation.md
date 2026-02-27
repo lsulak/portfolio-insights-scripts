@@ -50,6 +50,7 @@ You must execute a 2-Stage DCF. To prevent calculation errors, you MUST show you
 - **Sensitivity Matrix:** 3x3 table showing Intrinsic Value at varying Revenue Growth (rows) and Operating Margins (columns) at the 15% discount rate.
 - **Missing Data (Nulls):** If `Quantitative Baseline Payload` provides a `null` for CapEx or D&A, use the Sector Average from the `Sector Analysis Payload` and flag it.
 - **ROIC Distortion:** If the calculated baseline ROIC exceeds 100% (often due to depleted book equity), cap the modeled ROIC at 50% for Stage 1.
+- **Currency Alignment Check:** Before calculating the final Margin of Safety, you must verify that the Market Price extracted by the `Market Analysis Payload` is in the exact same currency as the reported_currency from the `Quantitative Baseline Payload`. If there is a mismatch (e.g., `Quantitative Baseline Payload` is in EUR, `Market Analysis Payload` price is an ADR in USD), you must explicitly flag this mismatch and refrain from calculating a final +/- % Margin of Safety.
 
 # 6. Output Format
 Your final output must be strictly formatted Markdown:

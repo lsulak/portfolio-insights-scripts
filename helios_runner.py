@@ -5,12 +5,12 @@ for company and its stock analysis.
 It's a multi-layered AI system that orchestrates various specialized "agents" to perform a comprehensive analysis of a company and its stock. Steps:
     1A. Extract & Parse (EE, ETE) [Input EE: EDGAR, Ouptut EE: JSON; Input ETE: Deep Research of Earnings Calls Transcripts on the Internet, Output ETE: Markdown]
     1B. Extract & Summarize & Synthetize (SE, ME) [Input: Deep Research on the Internet, Output: Markdown]
-    2A. Compile the Math (QBC) [Input: 1A, 1B, Output: Yaml]
+    2A. Compile the Math (QBC) [Input: 1A, Output: Yaml]
     2B. Audit the Narrative (NV) [Input: 1A, 1B, SE, Output: Markdown]
     3A. Valuate the Business (VE) [Input: QBC, NV, SE, Output: Markdown]
     3B. Explain the Business (BE) [Input: NV, QBC, SE, all 8Ks from EE, ETE, last 10K with Business and Risk Factor sections only, Output: Markdown]
     4. The External Reality Check (ERC) [Input: Deep Research on the Internet, BE and NV, Output: Markdown]
-    5. Final Company Analyser (CE) [Input: QBC, NV, ME, VE, BE, ERC, Output: Markdown]
+    5. Final Company Analyser (CE) [Input: QBC, NV, ME, VE, BE, ERC, SE, Output: Markdown]
 
 So Deep Search with Internet only: ETE, SE, ME, ERC - so 4x (cost maybe $6 per run)
 """
