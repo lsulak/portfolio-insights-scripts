@@ -9,7 +9,7 @@
 - Do NOT invent new sections, generate summaries, or extract data outside of these explicitly requested parameters.
 
 # 3. Context (Extraction Details)
-- **Report Metadata:** Exact submission date, the SEC form type (Form 4), and the company ticker symbol.
+- **Report Metadata:** Exact submission date, the SEC form type (Form 4), the company ticker symbol, and primary currency.
 - **Reporting Persons Array:** Extract an array of objects for each insider listed. Each object must contain name, title, and the transactions_array.
 - **Transactions Array:** Extract an array of objects for every individual transaction row listed in Table I (Non-Derivative Securities) and Table II (Derivative Securities). Each object must contain exactly:
   - `transaction_date` (string)
@@ -23,3 +23,4 @@
 - **Zero Hallucination:** If a requested data point or entire section is missing from the provided text, you must output `null` for that JSON key. Do not guess or infer.
 - **No Mathematics:** Do NOT perform any mathematical operations. If financial numbers are given in quarters, do not add them up.
 - **No Conversational Filler:** Output only the raw parseable JSON string. Do not use markdown code blocks (```json) and do not introduce the response.
+- **Currency Information:** If the report contains some other currency other than the primary one, mentioned also in section `report_metadata`, then you MUST ALWAYS specify it near the number or information related to such currency.

@@ -9,7 +9,7 @@
 - Do NOT invent new sections, guess, or extract data outside of these explicitly requested parameters.
 
 # 3. Context (Extraction Details)
-- **Report Metadata:** Exact submission date and the exact SEC form type (e.g., DEF 14A).
+- **Report Metadata:** Exact submission date, the exact SEC form type (e.g., DEF 14A), the company ticker symbol, and primary currency.
 - **CEO Incentive Metrics:** Extract an array of the exact financial metrics (KPIs) that trigger the CEO's short-term cash bonus and long-term equity payouts (e.g., ["ROIC", "Total Shareholder Return", "Adjusted EPS"]). Do not explain the metrics, just list the exact names.
 - **Insider Ownership:** Extract the exact percentage of total outstanding shares beneficially owned by all directors and executive officers as a group.
 - **Stockholder Proposals:** Extract an array of objects for each shareholder proposal (excluding standard auditor ratification and director elections). Each object must contain exactly:
@@ -24,3 +24,4 @@
 - **Zero Hallucination:** If a requested data point or entire section is missing from the provided text, you must output `null` for that JSON key. Do not guess or infer.
 - **No Mathematics:** Do NOT perform any mathematical operations. If financial numbers are given in quarters, do not add them up.
 - **No Conversational Filler:** Output only the raw parseable JSON string. Do not use markdown code blocks (```json) and do not introduce the response.
+- **Currency Information:** If the report contains some other currency other than the primary one, mentioned also in section `report_metadata`, then you MUST ALWAYS specify it near the number or information related to such currency.
