@@ -15,11 +15,11 @@ It's a multi-layered AI system that orchestrates various specialized "agents" to
 So Deep Search with Internet only: ETE, SE, ME, ERC - so 4x (cost maybe $6 per run)
 
 TODOs
-* Add TICKER symbol everywhere !
 * Final SPEC
 * Check HELIOS Monolith for ideas
 * Finalize code!
 * Upload some results to Google Drive? Maybe at least those that the final layer will work with? Human readability and rerun from Gemini Web UI?
+* Rephrase sections Input Data Contract for quantitative_baseline_compiler and narrative_validator
 """
 
 import asyncio

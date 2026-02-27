@@ -101,7 +101,7 @@ class EdgarExtractionPipeline:
         """Fetch filings for every configured form type and return summarization tasks."""
         tasks = []
 
-        for form_type, agent_spec in EDGAR_FORM_TO_AGENT_SPEC.items():
+        for form_type, agent_spec_template in EDGAR_FORM_TO_AGENT_SPEC.items():
             await asyncio.sleep(EDGAR.api_call_delay_seconds)
 
             years_back = EDGAR_FORM_TO_YEARS_BACK.get(form_type)
@@ -120,9 +120,9 @@ class EdgarExtractionPipeline:
             for doc in docs:
                 is_most_recent = is_annual and doc.submission_year == latest_year
 
-                async def _bounded_summarize(d=doc, spec=agent_spec, recent=is_most_recent):
+                async def _bounded_summarize(d=doc, spec_template=agent_spec_template, recent=is_most_recent):
                     async with semaphore:
-                        return await summarizer.summarize(d, spec, recent, self.force_resummarize)
+                        return await summarizer.summarize(d, spec_template, recent, self.force_resummarize)
 
                 tasks.append(_bounded_summarize())
 

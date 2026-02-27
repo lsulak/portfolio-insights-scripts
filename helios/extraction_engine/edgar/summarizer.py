@@ -37,7 +37,7 @@ class EdgarDocumentSummarizer:
     async def summarize(
         self,
         doc: LocalEdgarDocument,
-        agent_spec: Template,
+        agent_spec_template: Template,
         is_most_recent_of_its_type: bool,
         force_resummarize: bool,
     ) -> bool:
@@ -55,7 +55,7 @@ class EdgarDocumentSummarizer:
             )
             return True
 
-        rendered_spec = self._render_agent_spec(doc.form_type, agent_spec, is_most_recent_of_its_type)
+        rendered_spec = self._render_agent_spec(doc.form_type, agent_spec_template, is_most_recent_of_its_type)
         doc.file_path_ai_ready = self._prepare_document(doc)
 
         ai_file = None
@@ -104,14 +104,14 @@ class EdgarDocumentSummarizer:
         return doc.file_path_raw
 
     @staticmethod
-    def _render_agent_spec(form_type: EdgarFormType, base_spec: Template, is_most_recent: bool) -> str:
+    def _render_agent_spec(form_type: EdgarFormType, base_spec: Template, ticker: str, is_most_recent: bool) -> str:
         """Render the Jinja2 agent spec, injecting extra context for the latest 10-K."""
         if form_type == EdgarFormType.ANNUAL_REPORT:
             addition = AGENT_ADDITIONS_FIRST_10K_ONLY if is_most_recent else ""
             if is_most_recent:
-                logger.info(f"Using enhanced specs for most recent {form_type}")
-            return base_spec.render(business_and_risk=addition)
-        return base_spec.render()
+                logger.info(f"Using enhanced specs for most recent {form_type} filing of {ticker} with business and risk factor context.")
+            return base_spec.render(business_and_risk=addition, ticker=ticker)
+        return base_spec.render(ticker=ticker)
 
     @staticmethod
     def _save_json(output_file: str, raw_response: str) -> None:
