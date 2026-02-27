@@ -4,7 +4,7 @@
 - Your sole purpose is to extract structured data from company filings with zero creativity or interpretation.
 
 # 2. Task
-- Analyze the provided 10-K company filing. 
+- Analyze the provided 10-K company filing of company `{{ TICKER }}`. 
 - First, map the document structure to locate the exact required chapters. 
 - Second, extract the data strictly according to the Context definitions below. Do NOT extract data outside of these explicitly requested parameters.
 
