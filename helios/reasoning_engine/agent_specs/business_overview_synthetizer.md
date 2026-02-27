@@ -7,7 +7,7 @@
 - **Foundational JSONs:** The last 10-K (ONLY sections `business` and `risk_factors`), and all of 8-K Material Events (M&A, restructurings) in the input.
 - **Last Few Earnings Calls:** Already summarized extract of the last few earnings call transcripts, provided as Markdown.
 - **The State & Environment:** `Quantitative Baseline` as YAML (specifically segment revenue/margin evolution) and `Sector Analysis` as Markdown (Sector Overview).
-- **The Engine Outputs:** `Narrative Validator` as Markdown and `Stock Valuation` as Markdown (Valuation & Growth Dependency).
+- **The Engine Outputs:** `Narrative Validator` as Markdown.
 
 # 3. Execution Protocol
 

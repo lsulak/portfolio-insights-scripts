@@ -37,7 +37,7 @@
         <mxCell id="krVF8poIIhshtyXyTykB-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;" value="&lt;div&gt;The Business Overview Engine&lt;/div&gt;&lt;div&gt;[BE]&lt;/div&gt;" vertex="1">
           <mxGeometry height="60" width="205" x="-450" y="355" as="geometry" />
         </mxCell>
-        <mxCell id="krVF8poIIhshtyXyTykB-7" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;The Business Overview Agent&lt;/h1&gt;&lt;div&gt;Input: NV + QBC + VE + SE + all 8K, the last 10K for Business and Risk Factors ONLY, ETE&lt;br&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action: present business - history, its most important milestones, risks etc&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: Markdown containing agent-consumable data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: non deep research&lt;/div&gt;" vertex="1">
+        <mxCell id="krVF8poIIhshtyXyTykB-7" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;The Business Overview Agent&lt;/h1&gt;&lt;div&gt;Input: NV + QBC + SE + all 8K, the last 10K for Business and Risk Factors ONLY, ETE&lt;br&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action: present business - history, its most important milestones, risks etc&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: Markdown containing agent-consumable data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: non deep research&lt;/div&gt;" vertex="1">
           <mxGeometry height="200" width="360" x="-340" y="115" as="geometry" />
         </mxCell>
         <mxCell id="krVF8poIIhshtyXyTykB-32" edge="1" parent="1" source="krVF8poIIhshtyXyTykB-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="krVF8poIIhshtyXyTykB-26">
@@ -82,7 +82,7 @@
         <mxCell id="krVF8poIIhshtyXyTykB-12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=12;fontColor=default;fillColor=default;" value="&lt;div&gt;Narrative Validator Engine&lt;/div&gt;&lt;div&gt;[NV]&lt;/div&gt;" vertex="1">
           <mxGeometry height="60" width="240" x="-1380" y="230" as="geometry" />
         </mxCell>
-        <mxCell id="krVF8poIIhshtyXyTykB-15" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Synthetizer Agents&lt;/h1&gt;&lt;div&gt;Input: EE + ETE + SE&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action: cross reference input data and validate but do not enrich. Basically, one for setting a quantitative baseline and other for narrative validator (qualitative checker).&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: Markdown containing agent-consumable data&lt;br&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: non deep research&lt;/div&gt;" vertex="1">
+        <mxCell id="krVF8poIIhshtyXyTykB-15" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Synthetizer Agents&lt;/h1&gt;&lt;div&gt;Input: EE + ETE + SE&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action: cross reference input data and validate but do not enrich. Basically, one for setting a quantitative baseline and other for narrative validator (qualitative checker).&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: QBC - YAML, NV - Markdown containing agent-consumable data&lt;br&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: non deep research&lt;/div&gt;" vertex="1">
           <mxGeometry height="240" width="250" x="-1130" y="-170" as="geometry" />
         </mxCell>
         <mxCell id="MBkPydjekQYkS3zr3F9V-13" edge="1" parent="1" source="krVF8poIIhshtyXyTykB-22" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;" target="krVF8poIIhshtyXyTykB-12">
@@ -93,9 +93,6 @@
         </mxCell>
         <mxCell id="krVF8poIIhshtyXyTykB-24" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#C73500;fillColor=#fa6800;align=center;verticalAlign=middle;rounded=0;fontColor=#000000;" value="3" vertex="1">
           <mxGeometry height="30" width="60" x="-680" y="200" as="geometry" />
-        </mxCell>
-        <mxCell id="krVF8poIIhshtyXyTykB-25" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#005700;fillColor=#008a00;align=center;verticalAlign=middle;rounded=0;fontColor=#ffffff;" value="4" vertex="1">
-          <mxGeometry height="30" width="60" x="-280" y="400" as="geometry" />
         </mxCell>
         <mxCell id="MBkPydjekQYkS3zr3F9V-1" edge="1" parent="1" source="krVF8poIIhshtyXyTykB-27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="krVF8poIIhshtyXyTykB-26">
           <mxGeometry relative="1" as="geometry" />
@@ -112,10 +109,10 @@
         <mxCell id="krVF8poIIhshtyXyTykB-29" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#2D7600;fillColor=#60a917;align=center;verticalAlign=middle;rounded=0;fontColor=#ffffff;" value="1" vertex="1">
           <mxGeometry height="30" width="60" x="-1560" y="550" as="geometry" />
         </mxCell>
-        <mxCell id="krVF8poIIhshtyXyTykB-30" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;The Company Analyser Agent&lt;/h1&gt;&lt;div&gt;Input: QBC+NV+SE+ME+VE+BE&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action: assess the business for long-term investment&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: Markdown containing agent-consumable data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: non deep research&lt;/div&gt;" vertex="1">
-          <mxGeometry height="200" width="360" x="-800" y="760" as="geometry" />
+        <mxCell id="krVF8poIIhshtyXyTykB-30" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;The Final Company Analyser Agent&lt;/h1&gt;&lt;div&gt;Input: QBC+NV+SE+ME+VE+BE+ERC&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action: assess the business for long-term investment&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: Markdown containing agent-consumable data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: non deep research&lt;/div&gt;" vertex="1">
+          <mxGeometry height="180" width="410" x="-860" y="760" as="geometry" />
         </mxCell>
-        <mxCell id="krVF8poIIhshtyXyTykB-26" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1;" value="&lt;div&gt;The Company Analyser&lt;/div&gt;&lt;div&gt;[CE]&lt;/div&gt;" vertex="1">
+        <mxCell id="krVF8poIIhshtyXyTykB-26" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=1;" value="&lt;div&gt;The Final Company Analyser&lt;/div&gt;&lt;div&gt;[CE]&lt;/div&gt;" vertex="1">
           <mxGeometry height="60" width="205" x="-1030" y="960" as="geometry" />
         </mxCell>
         <mxCell id="krVF8poIIhshtyXyTykB-39" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;fillColor=#a0522d;fontColor=#ffffff;strokeColor=#6D1F00;strokeWidth=3;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;Legend&lt;/h1&gt;&lt;div&gt;More visible borders - Deep Research Mode&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Bottom Right corner digits - Execution Step (some can run in parallel)&lt;/div&gt;" vertex="1">
@@ -156,7 +153,7 @@
         <mxCell id="MBkPydjekQYkS3zr3F9V-14" edge="1" parent="1" source="krVF8poIIhshtyXyTykB-41" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.303;entryY=1.053;entryDx=0;entryDy=0;entryPerimeter=0;" target="krVF8poIIhshtyXyTykB-12">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="MBkPydjekQYkS3zr3F9V-21" parent="1" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;rounded=0;fillColor=#ffcd28;strokeColor=#d79b00;gradientColor=#ffa500;" value="6" vertex="1">
+        <mxCell id="MBkPydjekQYkS3zr3F9V-21" parent="1" style="text;html=1;whiteSpace=wrap;align=center;verticalAlign=middle;rounded=0;fillColor=#008a00;strokeColor=#005700;fontColor=#ffffff;" value="5" vertex="1">
           <mxGeometry height="30" width="60" x="-850" y="1000" as="geometry" />
         </mxCell>
         <mxCell id="MBkPydjekQYkS3zr3F9V-24" edge="1" parent="1" source="MBkPydjekQYkS3zr3F9V-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" target="krVF8poIIhshtyXyTykB-26">
@@ -170,11 +167,14 @@
         <mxCell id="MBkPydjekQYkS3zr3F9V-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=4;" value="The External Reality Check&lt;br&gt;[ERC]" vertex="1">
           <mxGeometry height="60" width="205" x="-60" y="535" as="geometry" />
         </mxCell>
-        <mxCell id="krVF8poIIhshtyXyTykB-37" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#314354;fillColor=#647687;align=center;verticalAlign=middle;rounded=0;fontColor=#ffffff;" value="5" vertex="1">
+        <mxCell id="krVF8poIIhshtyXyTykB-37" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#314354;fillColor=#647687;align=center;verticalAlign=middle;rounded=0;fontColor=#ffffff;" value="4" vertex="1">
           <mxGeometry height="30" width="60" x="110" y="580" as="geometry" />
         </mxCell>
         <mxCell id="MBkPydjekQYkS3zr3F9V-23" parent="1" style="text;html=1;whiteSpace=wrap;overflow=hidden;rounded=0;" value="&lt;h1 style=&quot;margin-top: 0px;&quot;&gt;The External Reality Check Agent&lt;/h1&gt;&lt;div&gt;Input: BE + NV + Deep Research on Internet&lt;br&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Action: look for any controversies and things outside of official company filings&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Output: Markdown containing agent-consumable data&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Style: deep research on Internet&lt;/div&gt;" vertex="1">
           <mxGeometry height="200" width="410" x="40" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="MBkPydjekQYkS3zr3F9V-25" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=#C73500;fillColor=#fa6800;align=center;verticalAlign=middle;rounded=0;fontColor=#000000;" value="3" vertex="1">
+          <mxGeometry height="30" width="60" x="-280" y="400" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

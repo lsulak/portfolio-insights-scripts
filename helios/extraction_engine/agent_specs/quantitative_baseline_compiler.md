@@ -11,7 +11,7 @@
 
 # 3. Context (Compilation Details & Schema Resolution)
 - **Framework & Currency Tracking:** For every period node, explicitly state the `reported_currency` (e.g., USD, EUR, CZK), `reporting_scale` (e.g., thousands, millions), and `accounting_standard` (e.g., US GAAP, IFRS). Do NOT attempt to convert currencies.
-- **The Financial Triad:** Compile the Income Statement, Balance Sheet, and Cash Flow Statement exactly as they appear in the source JSONs, mapped to the universal taxonomy.
+- **The Financial Triad:** Compile the Income Statement, Balance Sheet, and Cash Flow Statement exactly as they appear in the source JSONs, mapped to the universal taxonomy. You MUST strictly preserve and surface the diluted shares outstanding, total debt, and cash and equivalents for every period, particularly the most recent TTM period, as these are required for downstream per-share equity valuation.
 - **Segment Breakdown:** Maintain a `segments` array for each period, extracting the revenue and operating income exactly as reported for that specific timeframe.
 - **The Forward Guidance Node:** Create a `forward_guidance` node at the end of the ledger containing explicit management targets for upcoming periods (e.g., expected CapEx, Revenue guidance) extracted from the Earnings Calls.
 
