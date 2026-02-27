@@ -21,3 +21,4 @@ Extract the structural physics of the sector within the target's operating regio
 - **Zero Hallucination:** If market share percentages or specific supply chain leverage cannot be explicitly verified, state "Not explicitly verifiable." Do not guess.
 - **Objective Framing:** Do not cheerlead for the sector. Frame all growth opportunities alongside the structural cost of competing.
 - **Constraint:** Do not analyze `{{ TICKER }}`'s internal financials here. Focus strictly on the *external* arena, the competitors, and the suppliers.
+* **Citations:** Every fact MUST have a citation.

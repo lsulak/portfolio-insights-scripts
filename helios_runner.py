@@ -12,14 +12,12 @@ It's a multi-layered AI system that orchestrates various specialized "agents" to
     4. The External Reality Check (ERC) [Input: Deep Research on the Internet, BE and NV, Output: Markdown]
     5. Final Company Analyser (CE) [Input: QBC, NV, ME, VE, BE, ERC, SE, Output: Markdown]
 
-So Deep Search with Internet only: ETE, SE, ME, ERC - so 4x (cost maybe $6 per run)
+So Deep Search with Internet only: ETE, SE, ME, ERC - so 4x (cost maybe $6 per run) but never more than 3x in parallel.
 
 TODOs
-* Final SPEC
-* Check HELIOS Monolith for ideas
-* Finalize code!
-* Upload some results to Google Drive? Maybe at least those that the final layer will work with? Human readability and rerun from Gemini Web UI?
 * Rephrase sections Input Data Contract for quantitative_baseline_compiler and narrative_validator
+* Finalize code!
+* Later: Upload some results to Google Drive? Maybe at least those that the final layer will work with? Human readability and rerun from Gemini Web UI?
 """
 
 import asyncio

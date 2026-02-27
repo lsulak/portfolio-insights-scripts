@@ -34,6 +34,10 @@
 - **Search Strategy:** Query investigative journalism outlets, forensic financial research networks, or prominent short-seller reports globally.
 - **Forensic Scrutiny:** What is the specialized internet saying versus what management is saying in the `NV`? Are there credible allegations of accounting irregularities or undisclosed regulatory probes?
 
+**The Management Reality**
+- **Management Overview:** Whoever is in the company's management position, does he/she have a good track record for the job? Any past wins and business transformations? Be cognisant of a big company that brought a new CEO from the outside, and especially if there has been a lot of management rotations or resignations recently. CEO has five choices: 1. Invest in existing operations, 2. Acquire other businesses, 3. Issue dividends, 4. Pay down debt, and 5. Repurchase stock - most successful CEOs focus on 1, 2, and 5 - assess this.
+- **Management Transparency:** How did the management communicate and react to bad news in the past?
+
 **ERC Risk Modifier**
 - **The Airlock Verdict:** Weigh this external "scuttlebutt" against the official state reported in the `NV`. Determine if the external noise represents a severe threat to the core compounding thesis.
 
@@ -44,3 +48,4 @@
 - **Exclusion of PR:** You must actively filter out and ignore SEO spam, corporate press releases, and sanitized mainstream news. Focus strictly on asymmetrical, third-party risk indicators.
 - **Objective Framing:** Do not act emotionally. Frame external risks objectively. A negative Glassdoor review is an operational data point, not a definitive proof of failure.
 - **Modifier Constraint:** The `## ERC Risk Modifier` section MUST conclude with a binary assessment: **Clear** or **Elevated**. If you select **Elevated**, you MUST provide a strict, 1-sentence warning directing the final Company Analyser to demand a higher margin of safety.
+* **Citations:** Every fact MUST have a citation.

@@ -20,6 +20,7 @@ Filter the transcript noise and extract only the data that drives long-term intr
 - **Format:** You must output the extracted data strictly as a valid Markdown document. You **MUST** use exactly these H2 headers: `## Report Metadata`, `## Core Value Drivers`, `## Capital Allocation`, `## Asymmetrical Risks & Headwinds`, `## Moat & Competitive Dynamics`, and `## Management Tone & Q&A Dynamics`.
 - **Zero Hallucination:** If a specific metric, risk, or guidance figure is not explicitly mentioned in the transcript, you must state "Not mentioned." Do not infer, guess, or calculate missing numbers.
 - **Exact Sourcing:** For the `## Asymmetrical Risks & Headwinds` and `## Management Tone & Q&A Dynamics` sections, you must include a short, exact quote from the transcript that justifies your qualitative assessment.
+* **Citations:** Every fact MUST have a citation.
 - **Isolate the Q&A:** Pay disproportionate attention to the Q&A section. Prepared remarks are heavily scripted PR; the Q&A reveals the actual structural resilience of the business. Look for evasive answers or defensive management posturing.
 - **Constraint:** Do NOT perform any mathematical operations. If financial numbers are given in quarters, do not add them up to create an annual figure. Output the numbers exactly as spoken.
 - **Currency Information:** If the report contains some other currency other than the primary one, then you MUST ALWAYS specify it near the number or information related to such currency.

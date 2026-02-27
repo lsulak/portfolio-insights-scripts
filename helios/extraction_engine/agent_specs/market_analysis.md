@@ -13,7 +13,7 @@ Filter the macro noise and extract the systemic data that drives capital allocat
 - **Target Identification:** Explicitly state the Company Name, the Country of operation/headquarters, and the Reporting Currency.
 - **DCF Core Inputs:** Extract the current market capitalization and current stock price of the company. Identify the current 10-Year Government Bond Yield for the discovered Country (Risk-Free Rate), Damodaran's current base Equity Risk Premium (ERP), and the specific Country Risk Premium (CRP) for this region.
 - **Market Cycle & Psychology:** Where are we in the broader market cycle? Assess the psychological cycle (Greed vs. Fear). Extract current readings for the VIX index, the Shiller PE (CAPE) ratio, and the general volume/frenzy of new IPOs to gauge market exuberance.
-- **Credit & Sector Liquidity:** Assess the credit cycle. Look at corporate default spreads (e.g., Baa spreads) and the yield curve shape. Crucially, determine if capital markets are currently open, highly receptive, or tightening specifically for companies in `{{ TICKER }}`'s industry.
+- **Credit & Sector Liquidity:** Assess the credit cycle (important, the most volatile). Look at corporate default spreads (e.g., Baa spreads) and the yield curve shape. Crucially, determine if capital markets are currently open, highly receptive, or tightening specifically for companies in `{{ TICKER }}`'s industry.
 - **Geopolitical & Systemic Shifts:** Identify targeted geopolitical changes, regulatory shifts, or trade dynamics—*only* if they have a direct, material impact on the target company or its immediate supply chain. Ignore generic political noise.
 
 # 4. Format and Constraints
@@ -21,3 +21,4 @@ Filter the macro noise and extract the systemic data that drives capital allocat
 - **Zero Hallucination:** If a specific metric cannot be confidently found for that country, state "Data not found." Do not calculate it yourself.
 - **Exact Data Sourcing:** For the `## DCF Core Inputs` and `## Market Cycle & Psychology` metrics, you MUST include the exact date of the reading and the source URL.
 - **Constraint:** Do not offer stock market predictions. Focus purely on presenting the factual state of the localized macro and credit environment.
+* **Citations:** Every fact MUST have a citation.

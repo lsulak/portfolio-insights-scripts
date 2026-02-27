@@ -55,7 +55,7 @@ class EdgarDocumentSummarizer:
             )
             return True
 
-        rendered_spec = self._render_agent_spec(doc.form_type, agent_spec_template, is_most_recent_of_its_type)
+        rendered_spec = self._render_agent_spec(doc.form_type, agent_spec_template, doc.ticker, is_most_recent_of_its_type)
         doc.file_path_ai_ready = self._prepare_document(doc)
 
         ai_file = None
