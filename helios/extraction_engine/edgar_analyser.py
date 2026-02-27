@@ -62,9 +62,7 @@ class EdgarExtractionPipeline:
 
         self._ensure_directories()
 
-        fetcher = EdgarFetcher(
-            company_name=EDGAR.company_name, email_address=EDGAR.email, download_dir=self._dir_raw
-        )
+        fetcher = EdgarFetcher(company_name=EDGAR.company_name, email_address=EDGAR.email, download_dir=self._dir_raw)
         summarizer = EdgarDocumentSummarizer(
             client=self.client,
             summarized_dir=self._dir_summarized,
@@ -129,4 +127,3 @@ class EdgarExtractionPipeline:
                 tasks.append(_bounded_summarize())
 
         return tasks
-

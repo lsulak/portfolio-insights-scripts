@@ -53,8 +53,8 @@ class LocalEdgarDocument:
 
 # Additional extraction context injected into the most recent 10-K only
 AGENT_ADDITIONS_FIRST_10K_ONLY = """
-    - Business: summary of extracted data from the business section, focused on the company's business description, including key products/services, markets, and competitive landscape. 
-    - Risk Factors: bulleted list of ALL explicitly named risk factors from the section Risk Factors in the filing, including a brief description of each found risk.
+- Business: summary of extracted data from the business section, focused on the company's business description, including key products/services, markets, and competitive landscape. 
+- Risk Factors: bulleted list of ALL explicitly named risk factors from the section Risk Factors in the filing, including a brief description of each found risk.
 """.strip()
 
 # Map each form type to its Markdown spec filename
