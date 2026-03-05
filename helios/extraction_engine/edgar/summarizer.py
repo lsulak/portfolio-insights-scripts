@@ -16,7 +16,7 @@ from helios.extraction_engine.edgar.domain import (
     EdgarFormType,
     LocalEdgarDocument,
 )
-from helios.utils.commons import GeminiExtractorAgent, GeminiFileManager
+from helios.utils.commons import GeminiExtractorAgent, GeminiFileManager, ResponseTypes
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,12 @@ class EdgarDocumentSummarizer:
                 f"[{doc.submission_year} / {doc.submission_order_for_the_year}]"
             )
             ai_file = await self._file_manager.upload_for_inference(doc.file_path_ai_ready, doc.mime_type)
-            raw_summary = await self._extractor.generate_structured_dossier(ai_file, rendered_spec)
+            raw_summary = await self._extractor.generate(
+                ai_file, 
+                rendered_spec, 
+                temperature=GEMINI.extractor_temperature, 
+                response_mime_type=ResponseTypes.APPLICATION_JSON.value
+            )
 
             self._save_json(output_file, raw_summary)
             logger.info(f"✅ Saved summary to: {output_file}")

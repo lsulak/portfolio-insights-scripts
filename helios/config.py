@@ -53,6 +53,7 @@ class GeminiConfig:
 
     # --- Python: generation parameters ---
     extractor_temperature: float = 0.0
+    narrative_validator_temperature: float = 0.0
     max_chars_per_document: int = 900_000
 
 

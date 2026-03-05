@@ -1,4 +1,5 @@
 import asyncio
+import enum
 import logging
 import os
 from abc import ABC, abstractmethod
@@ -15,6 +16,13 @@ from tenacity import before_sleep_log, retry, wait_exponential, stop_after_attem
 from helios.config import AGENT_SPECS_DIR, GEMINI
 
 logger = logging.getLogger(__name__)
+
+
+class ResponseTypes(enum.Enum):
+    """Enum for expected response formats from Gemini agents."""
+
+    JSON = "application/json"
+    TEXT = "text/plain"
 
 
 # ------------------------------------------------------------------
@@ -139,29 +147,37 @@ class GeminiExtractorAgent:
         before_sleep=before_sleep_log(logger, logging.WARNING),
         reraise=True,
     )
-    async def generate_structured_dossier(self, ai_file: AIHostedFile, system_prompt: str) -> str:
-        """Run a structured extraction prompt against the Gemini model.
+    async def generate(
+        self,
+        ai_file: AIHostedFile,
+        system_prompt: str,
+        *,
+        temperature: float = 0.0,
+        response_mime_type: str = ResponseTypes.TEXT.value,
+    ) -> str:
+        """Core generation loop.
 
         Args:
             ai_file: Handle returned by ``GeminiFileManager.upload_for_inference``.
             system_prompt: The rendered agent spec / system instruction.
+            response_mime_type: If set, constrains the output format.
 
         Returns:
-            Raw JSON string from the model.
+            Raw model output string.
         """
-        logger.info(f"[GEMINI] Extracting from {ai_file.file_name}...")
+        logger.info(f"[GEMINI] Processing {ai_file.file_name}...")
 
         config = types.GenerateContentConfig(
             system_instruction=system_prompt,
-            temperature=GEMINI.extractor_temperature,
-            response_mime_type="application/json",
+            temperature=temperature,
+            response_mime_type=response_mime_type,
         )
 
         file_ref = await self.client.aio.files.get(name=ai_file.file_name)
 
         response = await self.client.aio.models.generate_content(
             model=self.model_name,
-            contents=[file_ref, "Extract the required data according to the system instructions."],
+            contents=[file_ref],
             config=config,
         )
 
@@ -171,8 +187,7 @@ class GeminiExtractorAgent:
                 f"Possible safety filter or content policy block."
             )
 
-        return response.text
-
+        return await response.text
 
 # ------------------------------------------------------------------
 # Deep Research base class
