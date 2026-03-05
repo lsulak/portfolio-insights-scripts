@@ -40,11 +40,18 @@ class GeminiConfig:
 
     # --- .env (required) ---
     api_key: str = field(repr=False)
-    extractor_model: str
-    earnings_call_model: str
+    max_parallel_calls: int
+    
+    edgar_extractor_model: str
+    earnings_call_analysis_model: str
     market_analysis_model: str
     sector_analysis_model: str
-    max_parallel_calls: int
+    external_reality_check_model: str
+    narrative_validator_model: str
+    quantitative_baseline_model: str
+    stock_valuation_model: str
+    business_overview_model: str
+    final_report_model: str
 
     # --- Python: resilience (engineering constants) ---
     max_retries: int = 5
@@ -54,6 +61,11 @@ class GeminiConfig:
     # --- Python: generation parameters ---
     extractor_temperature: float = 0.0
     narrative_validator_temperature: float = 0.0
+    quantitative_baseline_temperature: float = 0.0
+    stock_valuation_temperature: float = 0.0
+    business_overview_temperature: float = 0.0
+    final_report_temperature: float = 0.0
+    
     max_chars_per_document: int = 900_000
 
 
@@ -79,9 +91,37 @@ class EdgarConfig:
 
 
 # ==========================================
+# OUTPUT DIRECTORY NAMES
+# ==========================================
+class OutputDir:
+    """Per-ticker output subdirectory names — single source of truth.
+
+    Every module that writes to or reads from ``<output_base_dir>/<ticker>/``
+    must reference these constants instead of hardcoding strings.
+    """
+
+    SECTOR_ANALYSIS = "sector_analysis"
+    MARKET_ANALYSIS = "market_analysis"
+
+    EARNINGS_CALLS = "earnings_calls_synthesis"
+    EDGAR_RAW = "company_filings_raw"
+    EDGAR_MINIFIED = "company_filings_minified"
+    EDGAR_SUMMARIZED = "company_filings_summarized"
+
+    NARRATIVE_VALIDATION = "narrative_validation"
+    QUANTITATIVE_BASELINE = "quantitative_baseline"
+
+    STOCK_VALUATION = "stock_valuation"
+    BUSINESS_OVERVIEW = "business_overview"
+    EXTERNAL_REALITY_CHECK = "external_reality_check"
+    FINAL_REPORT = "final_report"
+
+# ==========================================
 # PATH CONSTANTS
 # ==========================================
-AGENT_SPECS_DIR = Path(__file__).resolve().parent / "extraction_engine" / "agent_specs"
+EXTRACTION_AGENT_SPECS_DIR = Path(__file__).resolve().parent / "extraction_engine" / "agent_specs"
+SYNTHESIS_AGENT_SPECS_DIR = Path(__file__).resolve().parent / "synthesis_engine" / "agent_specs"
+REASONING_AGENT_SPECS_DIR = Path(__file__).resolve().parent / "reasoning_engine" / "agent_specs"
 
 
 # ==========================================
@@ -95,11 +135,18 @@ DEFAULT_TICKER = os.getenv("TESTING_TICKER", "GOOGL")
 # ==========================================
 GEMINI = GeminiConfig(
     api_key=_env("GEMINI_API_KEY"),
-    extractor_model=_env("EXTRACTOR_MODEL"),
-    earnings_call_model=_env("EARNINGS_CALL_ANALYZER_MODEL"),
+    max_parallel_calls=int(_env("GEMINI_MAX_PARALLEL_CALLS")),
+
+    edgar_extractor_model=_env("EXTRACTOR_MODEL"),
+    earnings_call_analysis_model=_env("EARNINGS_CALL_ANALYZER_MODEL"),
     market_analysis_model=_env("MARKET_ANALYSIS_MODEL"),
     sector_analysis_model=_env("SECTOR_ANALYSIS_MODEL"),
-    max_parallel_calls=int(_env("GEMINI_MAX_PARALLEL_CALLS")),
+    external_reality_check_model=_env("EXTERNAL_REALITY_CHECK_MODEL"),
+    narrative_validator_model=_env("NARRATIVE_VALIDATOR_MODEL"),
+    quantitative_baseline_model=_env("QUANTITATIVE_BASELINE_MODEL"),
+    stock_valuation_model=_env("STOCK_VALUATION_MODEL"),
+    business_overview_model=_env("BUSINESS_OVERVIEW_MODEL"),
+    final_report_model=_env("FINAL_REPORT_MODEL"),
 )
 
 EDGAR = EdgarConfig(

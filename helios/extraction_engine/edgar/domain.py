@@ -10,7 +10,7 @@ from typing import Optional
 
 from jinja2 import Template
 
-from helios.config import AGENT_SPECS_DIR, EDGAR
+from helios.config import EXTRACTION_AGENT_SPECS_DIR, EDGAR
 from helios.utils.commons import load_agent_spec
 
 
@@ -70,7 +70,7 @@ _FORM_TO_SPEC_FILE = {
 def _load_all_agent_specs() -> dict[EdgarFormType, Template]:
     """Load all Edgar agent specs from Markdown files into Jinja2 templates."""
     return {
-        form_type: load_agent_spec(AGENT_SPECS_DIR / filename) for form_type, filename in _FORM_TO_SPEC_FILE.items()
+        form_type: load_agent_spec(EXTRACTION_AGENT_SPECS_DIR / filename) for form_type, filename in _FORM_TO_SPEC_FILE.items()
     }
 
 

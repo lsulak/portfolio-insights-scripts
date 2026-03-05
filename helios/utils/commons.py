@@ -13,7 +13,7 @@ from google.genai import types, errors
 from jinja2 import Template
 from tenacity import before_sleep_log, retry, wait_exponential, stop_after_attempt, retry_if_exception
 
-from helios.config import AGENT_SPECS_DIR, GEMINI
+from helios.config import EXTRACTION_AGENT_SPECS_DIR, GEMINI
 
 logger = logging.getLogger(__name__)
 
@@ -253,7 +253,7 @@ class DeepResearchAnalyser(ABC):
         Convenience wrapper combining ``load_agent_spec`` + ``generate_agent_spec``.
         Looks up the file under ``AGENT_SPECS_DIR``.
         """
-        template = load_agent_spec(AGENT_SPECS_DIR / spec_filename)
+        template = load_agent_spec(EXTRACTION_AGENT_SPECS_DIR / spec_filename)
         return generate_agent_spec(template, **keywords)
 
     # ------------------------------------------------------------------

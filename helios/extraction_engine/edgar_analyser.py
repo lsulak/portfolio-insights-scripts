@@ -13,7 +13,7 @@ import os
 
 from google import genai
 
-from helios.config import GEMINI, EDGAR
+from helios.config import GEMINI, EDGAR, OutputDir
 from helios.extraction_engine.edgar.cleaner import EdgarDocumentCleaner
 from helios.extraction_engine.edgar.domain import (
     EdgarFormType,
@@ -48,9 +48,9 @@ class EdgarExtractionPipeline:
         self.force_resummarize = force_resummarize
 
         ticker_dir = os.path.join(output_base_dir, ticker)
-        self._dir_raw = os.path.join(ticker_dir, "company_filings_raw")
-        self._dir_minified = os.path.join(ticker_dir, "company_filings_minified")
-        self._dir_summarized = os.path.join(ticker_dir, "company_filings_summarized")
+        self._dir_raw = os.path.join(ticker_dir, OutputDir.EDGAR_RAW)
+        self._dir_minified = os.path.join(ticker_dir, OutputDir.EDGAR_MINIFIED)
+        self._dir_summarized = os.path.join(ticker_dir, OutputDir.EDGAR_SUMMARIZED)
 
     # ------------------------------------------------------------------
     # Public

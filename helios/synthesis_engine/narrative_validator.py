@@ -21,7 +21,8 @@ from typing import Generator
 
 from google import genai
 
-from helios.config import GEMINI
+from helios.config import GEMINI, SYNTHESIS_AGENT_SPECS_DIR, OutputDir
+from helios.extraction_engine.edgar.domain import EdgarFormType
 from helios.utils.commons import (
     AIHostedFile,
     GeminiExtractorAgent,
@@ -32,18 +33,6 @@ from helios.utils.commons import (
 )
 
 logger = logging.getLogger(__name__)
-
-# Agent specs live alongside this module, not in extraction_engine/agent_specs
-_SYNTHESIS_SPECS_DIR = Path(__file__).resolve().parent / "agent_specs"
-
-# Subdirectory names matching extraction engine output conventions
-_SECTOR_ANALYSIS_DIR = "sector_analysis"
-_EARNINGS_CALLS_DIR = "earnings_calls_synthesis"
-_EDGAR_SUMMARIZED_DIR = "company_filings_summarized"
-_OUT_DIR_NAME = "narrative_validation"
-
-# Edgar form types ordered by analytical importance
-_EDGAR_FORM_ORDER = ["10-K", "10-Q", "8-K", "DEF 14A", "4"]
 
 
 class NarrativeValidator:
@@ -79,7 +68,7 @@ class NarrativeValidator:
         now = datetime.now()
         quarter = ((now.month - 1) // 3) + 1
         filename = f"report_{now.year}-Q{quarter}.md"
-        return os.path.join(self._ticker_dir(), _OUT_DIR_NAME, filename)
+        return os.path.join(self._ticker_dir(), OutputDir.NARRATIVE_VALIDATION, filename)
 
     # ------------------------------------------------------------------
     # Document collection
@@ -87,25 +76,25 @@ class NarrativeValidator:
 
     def _collect_sector_analysis(self) -> list[tuple[str, str]]:
         """Read all sector analysis reports (Markdown)."""
-        sector_dir = os.path.join(self._ticker_dir(), _SECTOR_ANALYSIS_DIR)
+        sector_dir = os.path.join(self._ticker_dir(), OutputDir.SECTOR_ANALYSIS)
         return list(self._read_dir_files(sector_dir, "*.md"))
 
     def _collect_earnings_calls(self) -> list[tuple[str, str]]:
         """Read all earnings call synthesis reports (Markdown)."""
-        earnings_dir = os.path.join(self._ticker_dir(), _EARNINGS_CALLS_DIR)
+        earnings_dir = os.path.join(self._ticker_dir(), OutputDir.EARNINGS_CALLS)
         return list(self._read_dir_files(earnings_dir, "*.md"))
 
     def _collect_edgar_filings(self) -> list[tuple[str, str]]:
         """Read all summarized Edgar filings grouped by form type, latest first.
 
-        Form types are iterated in ``_EDGAR_FORM_ORDER`` (10-K first, most
-        analytically important).  Within each group, files are sorted by
+        Form types are iterated in ``EdgarFormType`` enum order (10-K first,
+        most analytically important).  Within each group, files are sorted by
         filename descending so the most recent filings appear first.
         """
         docs: list[tuple[str, str]] = []
-        base = os.path.join(self._ticker_dir(), _EDGAR_SUMMARIZED_DIR)
+        base = os.path.join(self._ticker_dir(), OutputDir.EDGAR_SUMMARIZED)
 
-        for form_type in _EDGAR_FORM_ORDER:
+        for form_type in EdgarFormType:
             form_dir = os.path.join(base, form_type)
             if not os.path.isdir(form_dir):
                 raise Exception(f"Expected Edgar summarized directory not found: {form_dir}.")
@@ -194,7 +183,7 @@ class NarrativeValidator:
 
     def _build_agent_spec(self) -> str:
         """Load and render the narrative validator agent spec."""
-        template = load_agent_spec(_SYNTHESIS_SPECS_DIR / self.AGENT_SPEC_FILE)
+        template = load_agent_spec(SYNTHESIS_AGENT_SPECS_DIR / self.AGENT_SPEC_FILE)
         return generate_agent_spec(template, TICKER=self.ticker)
 
     # ------------------------------------------------------------------
@@ -229,9 +218,7 @@ class NarrativeValidator:
         file_manager = GeminiFileManager(self.client)
         ai_file: AIHostedFile | None = None
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".md", encoding="utf-8", delete=False
-        ) as tmp:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", encoding="utf-8", delete=False) as tmp:
             tmp.write(dossier_text)
 
             try:
@@ -239,7 +226,7 @@ class NarrativeValidator:
 
                 # 3. Generate the narrative audit report
                 agent_spec = self._build_agent_spec()
-                extractor = GeminiExtractorAgent(self.client, GEMINI.extractor_model)
+                extractor = GeminiExtractorAgent(self.client, GEMINI.narrative_validator_model)
                 report = await extractor.generate(
                     ai_file,
                     agent_spec, 

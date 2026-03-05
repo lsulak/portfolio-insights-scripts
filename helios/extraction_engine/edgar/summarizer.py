@@ -26,7 +26,7 @@ class EdgarDocumentSummarizer:
 
     def __init__(self, client: genai.Client, summarized_dir: str, cleaner: EdgarDocumentCleaner):
         self._file_manager = GeminiFileManager(client)
-        self._extractor = GeminiExtractorAgent(client, model_name=GEMINI.extractor_model)
+        self._extractor = GeminiExtractorAgent(client, model_name=GEMINI.edgar_extractor_model)
         self._cleaner = cleaner
         self._summarized_dir = summarized_dir
 
