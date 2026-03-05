@@ -11,7 +11,7 @@ class EarningsCallAnalyser(DeepResearchAnalyser):
     """Earnings call transcript analysis via Gemini Deep Research Agent."""
 
     OUT_DIR_NAME = "earnings_calls_synthesis"
-    AGENT_SPEC_FILENAME = "earnings_calls_analysis.md"
+    AGENT_SPEC_FILENAME = "earnings_calls.md"
 
     def _get_model(self) -> str:
         return GEMINI.earnings_call_model

@@ -15,9 +15,8 @@ It's a multi-layered AI system that orchestrates various specialized "agents" to
 So Deep Search with Internet only: ETE, SE, ME, ERC - so 4x (cost maybe $6 per run) but never more than 3x in parallel.
 
 TODOs
-* Rephrase sections Input Data Contract for quantitative_baseline_compiler and narrative_validator
 * Finalize code!
-* Later: Upload some results to Google Drive? Maybe at least those that the final layer will work with? Human readability and rerun from Gemini Web UI?
+* Later: Upload some results to Google Drive? Maybe at least those that the final layer will work with? So that I can read it and rerun from Gemini Web UI
 """
 
 import asyncio

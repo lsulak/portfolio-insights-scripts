@@ -29,10 +29,10 @@ You MUST format your output strictly using the following Markdown headers and lo
 * **Compensation & R&D:** Using the `NV` and `BE`, assess management's abuse of stock options and the historical efficiency of their R&D spend.
 
 ## C. Business Quality & Management (Buffett, Munger & Fisher)
-* **Revenue & Costs:** Using the `QBC` and `BE`, map the segment revenue concentration, TAM, and supply chain input sensitivities. 
-* **Margins & Moat:** Using the `QBC`, map the margin trajectory. Are profit margins expanding or contracting? This is the proxy for pricing power. Using the `SE` and `BE`, score the moat out of 10 across: Switching Costs, Network Effects, Cost Advantages, Intangible Assets, and Efficient Scale. Explicitly state if the moat is widening or narrowing.
+* **Revenue & Costs:** Using the `QBC` and `BE`, map the segment revenue concentration, TAM, and supply chain input sensitivities. Is the revenue consistently growing? Is the business economics predictable? Especially organing growth through pricing power, domestic and international expansion, and new verticals are preferable to growth built on aggressive M&A or financial engineering.
+* **Margins & Moat:** Using the `QBC`, map the margin trajectory. Are profit margins expanding or contracting? This is the proxy for pricing power that needs to be assessed. Using the `SE` and `BE`, score the moat out of 10 across: Switching Costs, Network Effects, Cost Advantages, Intangible Assets, and Efficient Scale. Explicitly state if the moat is widening or narrowing.
 * **Management Integrity Check:** Using the `NV`, ruthlessly audit the leadership. Look for "KPI Drift" (changing metrics to hide slowing growth). Compare Net Income to Operating Cash Flow (OCF) over the last 10 years—if Net Income is consistently rising while OCF is flat, flag this accounting risk. Evaluate their capital allocation track record (Buybacks vs. Dividends vs. Acquisitions). Check insider ownership and highlight any recent buys/sells. 
-* **The Scuttlebutt & Inversion:** Synthesize the employee/customer sentiment from the `ERC` payload. Then, invert the thesis: What are the strongest counter-arguments and short-seller claims?
+* **The Scuttlebutt & Inversion:** Synthesize the employee/customer sentiment from the `ERC` payload. Then, invert the thesis: What are the strongest counter-arguments and short-seller claims? How much money can I make when I am right and how much I can lose when the things won't work out?
 
 ## D. Growth & Story (Lynch)
 * **Categorization:** Classify the company (Slow Grower, Stalwart, Cyclical, Fast Grower, Turnaround, Asset Play); one stock can be in several groups.
