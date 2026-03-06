@@ -8,15 +8,13 @@ It's a multi-layered AI system that orchestrates various specialized "agents" to
     2A. Compile the Math (QBC) [Input: 1A, Output: Yaml]
     2B. Audit the Narrative (NV) [Input: 1A, SE, Output: Markdown]
     3A. Valuate the Business (VE) [Input: QBC, NV, SE, Output: Markdown]
-    3B. Explain the Business (BE) [Input: NV, QBC, SE, all 8Ks from EE, ETE, last 10K with Business and Risk Factor sections only, Output: Markdown]
+    3B. Explain the Business (BE) [Input: Deep Research on the Internet, NV, QBC, SE, ETE, last 10K with Business and Risk Factor sections only, Output: Markdown]
     4. The External Reality Check (ERC) [Input: Deep Research on the Internet, BE and NV, Output: Markdown]
     5. Final Company Analyser (CE) [Input: QBC, NV, ME, VE, BE, ERC, SE, Output: Markdown]
 
-So Deep Search with Internet only: ETE, SE, ME, ERC - so 4x (cost maybe $6 per run) but never more than 3x in parallel.
+So Deep Search with Internet only: ETE, SE, ME, BE, ERC - so 5x (cost maybe $10 per run) but never more than 3x in parallel.
 
 TODOs
-* Busniess overview not good enough - revenue segments and their evolution over time, cost structure, key 
-  milestones and catalysts, moat analysis - it only works with last 10K so need more data - this perhaps could be using search?
 * Later: Upload some results to Google Drive? Maybe at least those that the final layer will work with? So that I can read it and rerun from Gemini Web UI
 """
 

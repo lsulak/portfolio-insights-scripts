@@ -5,9 +5,9 @@ Consumes outputs from five prior synthesis/extraction stages:
     2. Quantitative Baseline   (YAML — segment revenue/margin evolution)
     3. Sector Analysis         (Markdown — industry rivalry & peers)
     4. Earnings Calls          (Markdown — management commentary)
-    5. Edgar Filings           (JSON — all 8-Ks, all 10-Qs, last 10-K only)
+    5. Edgar Filings           (JSON — last 10-K only)
 
-and feeds them as a single compiled dossier to a Gemini model with the
+and passes them as context to a Gemini Deep Research Agent with the
 ``business_overview.md`` agent spec.
 
 The result is a Markdown executive primer covering origin, revenue engine,
@@ -16,64 +16,91 @@ cost structure, execution milestones, and moat analysis.
 
 import logging
 import os
+from pathlib import Path
 
 from helios.config import GEMINI, SYNTHESIS_AGENT_SPECS_DIR, OutputDir
 from helios.extraction_engine.edgar.domain import EdgarFormType
-from helios.utils.commons import DossierAnalyser, current_quarter
+from helios.utils.commons import DeepResearchAnalyser, read_dir_files
 
 logger = logging.getLogger(__name__)
 
 
-class BusinessOverviewSynthesizer(DossierAnalyser):
-    """Produces a structured business primer for a ticker.
+class BusinessOverviewSynthesizer(DeepResearchAnalyser):
+    """Produces a structured business primer for a ticker via Deep Research.
 
-    Gathers narrative validation, quantitative baseline, sector analysis,
-    earnings call synthesis, and selective Edgar filings (all 8-Ks, all 10-Qs,
-    last 10-K only), then feeds them to a Gemini model with the business
-    overview agent spec to produce a Markdown executive primer.
+    Gathers narrative validation, quantitative baseline, sector analysis, earnings call synthesis,
+    and selective Edgar filings - last 10-K only, then feeds them as context to a Gemini
+    Deep Research Agent with the business overview agent spec.
     """
 
-    AGENT_SPEC_FILE = "business_overview.md"
+    AGENT_SPEC_FILENAME = "business_overview.md"
     AGENT_SPECS_DIR = SYNTHESIS_AGENT_SPECS_DIR
 
     def _get_model(self) -> str:
         return GEMINI.business_overview_model
 
-    def _get_temperature(self) -> float:
-        return GEMINI.business_overview_temperature
-
     def _build_output_path(self) -> str:
-        year, quarter = current_quarter()
+        year, quarter = self._current_quarter()
         filename = f"overview_{year}-Q{quarter}.md"
-        return os.path.join(self._ticker_dir(), OutputDir.BUSINESS_OVERVIEW, filename)
+        return os.path.join(self._ticker_output_dir(OutputDir.BUSINESS_OVERVIEW), filename)
 
-    def _compile_dossier(self) -> str:
+    def _build_agent_spec(self) -> str:
+        return self._render_agent_spec(self.AGENT_SPEC_FILENAME, TICKER=self.ticker)
+
+    def _build_context(self) -> str:
+        """Load upstream pipeline outputs as context for Deep Research."""
+        ticker_dir = os.path.join(self.output_base_dir, self.ticker)
         sections: list[str] = []
-        self._add_dossier_section(
-            sections, "NARRATIVE VALIDATION PAYLOAD", self._collect_files(OutputDir.NARRATIVE_VALIDATION, "*.md")
-        )
-        self._add_dossier_section(
-            sections,
-            "QUANTITATIVE BASELINE PAYLOAD (YAML)",
-            self._collect_files(OutputDir.QUANTITATIVE_BASELINE, "*.yaml"),
-        )
-        self._add_dossier_section(
-            sections, "SECTOR ANALYSIS PAYLOAD", self._collect_files(OutputDir.SECTOR_ANALYSIS, "*.md")
-        )
-        self._add_dossier_section(
-            sections, "EARNINGS CALL SYNTHESIS", self._collect_files(OutputDir.EARNINGS_CALLS, "*.md")
-        )
-        self._add_dossier_section(
-            sections,
-            "EDGAR FILINGS (8-K all, 10-Q all, 10-K latest only)",
-            self._collect_edgar_filings(
-                form_types=[EdgarFormType.CURRENT_REPORT, EdgarFormType.QUARTERLY_REPORT, EdgarFormType.ANNUAL_REPORT],
-                max_per_type={EdgarFormType.ANNUAL_REPORT: 1},
-            ),
-        )
+
+        # Latest 10-K only
+        edgar_base = os.path.join(ticker_dir, OutputDir.EDGAR_SUMMARIZED)
+        form_dir = os.path.join(edgar_base, EdgarFormType.ANNUAL_REPORT)
+        if os.path.isdir(form_dir):
+            files = sorted(Path(form_dir).glob("*.json"), reverse=True)[:1]
+            edgar_docs = []
+            for fp in files:
+                content = fp.read_text(encoding="utf-8")
+                if content:
+                    edgar_docs.append((f"EDGAR {EdgarFormType.ANNUAL_REPORT}/{fp.name} (latest only)", content))
+            if edgar_docs:
+                self._add_section(sections, "EDGAR FILINGS (10-K latest only)", edgar_docs)
+
+        # Quantitative Baseline
+        qbc_docs = read_dir_files(os.path.join(ticker_dir, OutputDir.QUANTITATIVE_BASELINE), "*.yaml")
+        if qbc_docs:
+            self._add_section(sections, "QUANTITATIVE BASELINE PAYLOAD (YAML)", qbc_docs)
+
+        # Narrative Validation
+        nv_docs = read_dir_files(os.path.join(ticker_dir, OutputDir.NARRATIVE_VALIDATION), "*.md")
+        if nv_docs:
+            self._add_section(sections, "NARRATIVE VALIDATION PAYLOAD", nv_docs)
+
+        # Sector Analysis
+        se_docs = read_dir_files(os.path.join(ticker_dir, OutputDir.SECTOR_ANALYSIS), "*.md")
+        if se_docs:
+            self._add_section(sections, "SECTOR ANALYSIS PAYLOAD", se_docs)
+
+        # Earnings Calls
+        ec_docs = read_dir_files(os.path.join(ticker_dir, OutputDir.EARNINGS_CALLS), "*.md")
+        if ec_docs:
+            self._add_section(sections, "EARNINGS CALL SYNTHESIS", ec_docs)
 
         if not sections:
             raise FileNotFoundError(
-                f"No source documents found for {self.ticker}. " f"Run the extraction and synthesis engines first."
+                f"No source documents found for {self.ticker}. Run the extraction and synthesis engines first."
             )
+
+        logger.info(f"[BusinessOverviewSynthesizer] Loaded context ({sum(len(s) for s in sections):,} chars).")
         return "\n".join(sections)
+
+    @staticmethod
+    def _add_section(sections: list[str], heading: str, docs: list[tuple[str, str]]) -> None:
+        """Append a labeled document group to sections."""
+        separator = "=" * 60
+        prefix = "" if not sections else "\n"
+        sections.append(prefix + separator)
+        sections.append(heading)
+        sections.append(separator)
+        for label, content in docs:
+            sections.append(f"\n--- {label} ---\n")
+            sections.append(content)

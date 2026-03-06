@@ -268,6 +268,18 @@ class DeepResearchAnalyser(ABC):
     def _build_agent_spec(self) -> str:
         """Return the fully-rendered agent spec prompt."""
 
+    def _build_context(self) -> str:
+        """Return optional upstream context to append to the agent spec input.
+
+        Override in subclasses that need to feed prior pipeline outputs
+        (e.g. Business Overview, Narrative Validation) into the Deep Research
+        agent alongside the prompt.
+
+        Returns:
+            A string of compiled context.
+        """
+        return ""
+
     # ------------------------------------------------------------------
     # Shared helpers
     # ------------------------------------------------------------------
@@ -313,7 +325,10 @@ class DeepResearchAnalyser(ABC):
         model = self._get_model()
         logger.info("Deploying Gemini Deep Research Agent via Interactions API...")
 
-        interaction = self.client.interactions.create(agent=model, input=agent_spec, background=True)
+        context = self._build_context()
+        full_input = f"{agent_spec}\n\n{context}"
+
+        interaction = self.client.interactions.create(agent=model, input=full_input, background=True)
         interaction_id = interaction.id
         logger.info(f"[Interaction ID: {interaction_id}] - Agent dispatched. Entering polling loop...")
 
