@@ -10,7 +10,8 @@ import logging
 import os
 
 from helios.config import GEMINI, REASONING_AGENT_SPECS_DIR, OutputDir
-from helios.utils.commons import DeepResearchAnalyser, read_dir_files
+from helios.utils.deep_research_analyser import DeepResearchAnalyser
+from helios.utils.commons import format_dossier_section, read_dir_files
 
 logger = logging.getLogger(__name__)
 
@@ -36,28 +37,21 @@ class ExternalRealityChecker(DeepResearchAnalyser):
     def _build_context(self) -> str:
         """Load Business Overview and Narrative Validation reports as context."""
         ticker_dir = os.path.join(self.output_base_dir, self.ticker)
-        sections: list[str] = []
 
-        be_docs = read_dir_files(os.path.join(ticker_dir, OutputDir.BUSINESS_OVERVIEW), "*.md")
-        if be_docs:
-            sections.append("=" * 60)
-            sections.append("BUSINESS OVERVIEW")
-            sections.append("=" * 60)
-            for label, content in be_docs:
-                sections.append(f"\n--- {label} ---\n")
-                sections.append(content)
+        sections = [
+            format_dossier_section(
+                "BUSINESS OVERVIEW", read_dir_files(os.path.join(ticker_dir, OutputDir.BUSINESS_OVERVIEW), "*.md")
+            ),
+            format_dossier_section(
+                "NARRATIVE VALIDATION",
+                read_dir_files(os.path.join(ticker_dir, OutputDir.NARRATIVE_VALIDATION), "*.md"),
+            ),
+        ]
 
-        nv_docs = read_dir_files(os.path.join(ticker_dir, OutputDir.NARRATIVE_VALIDATION), "*.md")
-        if nv_docs:
-            sections.append("\n" + "=" * 60)
-            sections.append("NARRATIVE VALIDATION")
-            sections.append("=" * 60)
-            for label, content in nv_docs:
-                sections.append(f"\n--- {label} ---\n")
-                sections.append(content)
+        dossier = "\n\n".join(s for s in sections if s)
+        if not dossier:
+            logger.warning("[ExternalRealityChecker] No BE/NV context found — running without upstream context.")
+            return ""
 
-        if not sections:
-            raise Exception("[ExternalRealityChecker] No BE/NV context found — running without upstream context.")
-
-        logger.info(f"[ExternalRealityChecker] Loaded BE + NV context ({sum(len(s) for s in sections):,} chars).")
-        return "\n".join(sections)
+        logger.info(f"[ExternalRealityChecker] Loaded BE + NV context ({len(dossier):,} chars).")
+        return dossier

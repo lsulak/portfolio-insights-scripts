@@ -3,7 +3,7 @@
 for company and its stock analysis.
 
 It's a multi-layered AI system that orchestrates various specialized "agents" to perform a comprehensive analysis of a company and its stock. Steps:
-    1A. Extract & Parse (EE, ETE) [Input EE: EDGAR, Ouptut EE: JSON; Input ETE: Deep Research of Earnings Calls Transcripts on the Internet, Output ETE: Markdown]
+    1A. Extract & Parse (EE, ETE) [Input EE: EDGAR, Output EE: JSON; Input ETE: Deep Research of Earnings Calls Transcripts on the Internet, Output ETE: Markdown]
     1B. Extract & Summarize & Synthesize (SE, ME) [Input: Deep Research on the Internet, Output: Markdown]
     2A. Compile the Math (QBC) [Input: 1A, Output: Yaml]
     2B. Audit the Narrative (NV) [Input: 1A, SE, Output: Markdown]
@@ -12,7 +12,8 @@ It's a multi-layered AI system that orchestrates various specialized "agents" to
     4. The External Reality Check (ERC) [Input: Deep Research on the Internet, BE and NV, Output: Markdown]
     5. Final Company Analyser (CE) [Input: QBC, NV, ME, VE, BE, ERC, SE, Output: Markdown]
 
-So Deep Search with Internet only: ETE, SE, ME, BE, ERC - so 5x (cost maybe $10 per run) but never more than 3x in parallel.
+So Deep Search with Internet only: ETE, SE, ME, BE, ERC - so 5x (cost maybe $8 per run)
+but never more than 3x Deep Research in parallel (using Paid Tier 1 in Google AI Studio).
 
 TODOs
 * Later: Upload some results to Google Drive? Maybe at least those that the final layer will work with? So that I can read it and rerun from Gemini Web UI
@@ -88,7 +89,8 @@ async def main(args) -> int:
     common = dict(client=client, output_base_dir=data_dir, ticker=args.ticker)
 
     # ── Layer 1: Extraction Engines ──────────────────────────────────
-    await _run_extraction_layer(common, args.force_resummarize_all, args) # some can fail for now
+    if not await _run_extraction_layer(common, args.force_resummarize_all, args):
+        return 1
 
     # ── Layer 2: Narrative Validator + Quantitative Baseline ─────────
     if not await _run_layer(
@@ -108,15 +110,13 @@ async def main(args) -> int:
 
     # ── Layer 4: External Reality Check ──────────────────────────────
     if not await _run_layer(
-        "External Reality Check", 
-        ExternalRealityChecker(**common, force_resummarize=args.force_resummarize_all)
+        "External Reality Check", ExternalRealityChecker(**common, force_resummarize=args.force_resummarize_all)
     ):
         return 1
 
     # ── Layer 5: Final Report ────────────────────────────────────────
     if not await _run_layer(
-        "Final Report", 
-        FinalReportCompiler(**common, force_resummarize=args.force_resummarize_all)
+        "Final Report", FinalReportCompiler(**common, force_resummarize=args.force_resummarize_all)
     ):
         return 1
 

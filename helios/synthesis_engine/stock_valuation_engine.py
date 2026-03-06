@@ -17,7 +17,8 @@ import logging
 import os
 
 from helios.config import GEMINI, SYNTHESIS_AGENT_SPECS_DIR, OutputDir
-from helios.utils.commons import DossierAnalyser, current_quarter
+from helios.utils.commons import format_dossier_section
+from helios.utils.dossier_analyser import DossierAnalyser
 
 logger = logging.getLogger(__name__)
 
@@ -40,29 +41,25 @@ class StockValuationEngine(DossierAnalyser):
         return GEMINI.stock_valuation_temperature
 
     def _build_output_path(self) -> str:
-        year, quarter = current_quarter()
+        year, quarter = self._current_quarter()
         filename = f"valuation_{year}-Q{quarter}.md"
         return os.path.join(self._ticker_dir(), OutputDir.STOCK_VALUATION, filename)
 
     def _compile_dossier(self) -> str:
-        sections: list[str] = []
-        self._add_dossier_section(
-            sections,
-            "QUANTITATIVE BASELINE PAYLOAD (YAML)",
-            self._collect_files(OutputDir.QUANTITATIVE_BASELINE, "*.yaml"),
-        )
-        self._add_dossier_section(
-            sections, "NARRATIVE VALIDATION PAYLOAD", self._collect_files(OutputDir.NARRATIVE_VALIDATION, "*.md")
-        )
-        self._add_dossier_section(
-            sections, "SECTOR ANALYSIS PAYLOAD", self._collect_files(OutputDir.SECTOR_ANALYSIS, "*.md")
-        )
-        self._add_dossier_section(
-            sections, "MARKET ANALYSIS PAYLOAD", self._collect_files(OutputDir.MARKET_ANALYSIS, "*.md")
-        )
-
-        if not sections:
+        sections = [
+            format_dossier_section(
+                "QUANTITATIVE BASELINE PAYLOAD (YAML)",
+                self._collect_files(OutputDir.QUANTITATIVE_BASELINE, "*.yaml"),
+            ),
+            format_dossier_section(
+                "NARRATIVE VALIDATION PAYLOAD", self._collect_files(OutputDir.NARRATIVE_VALIDATION, "*.md")
+            ),
+            format_dossier_section("SECTOR ANALYSIS PAYLOAD", self._collect_files(OutputDir.SECTOR_ANALYSIS, "*.md")),
+            format_dossier_section("MARKET ANALYSIS PAYLOAD", self._collect_files(OutputDir.MARKET_ANALYSIS, "*.md")),
+        ]
+        dossier = "\n\n".join(s for s in sections if s)
+        if not dossier:
             raise FileNotFoundError(
-                f"No source documents found for {self.ticker}. " f"Run the synthesis and extraction engines first."
+                f"No source documents found for {self.ticker}. Run the synthesis and extraction engines first."
             )
-        return "\n".join(sections)
+        return dossier

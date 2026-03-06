@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 from helios.config import GEMINI, EDGAR, OutputDir
-from helios.utils.commons import DeepResearchAnalyser
+from helios.utils.deep_research_analyser import DeepResearchAnalyser
 
 
 class EarningsCallAnalyser(DeepResearchAnalyser):

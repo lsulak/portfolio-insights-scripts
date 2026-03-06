@@ -42,7 +42,7 @@
 - **The Airlock Verdict:** Weigh this external "scuttlebutt" against the official state reported in the `NV`. Determine if the external noise represents a severe threat to the core compounding thesis.
 
 ## 4. Format and Constraints
-- **Format:** You must output the synthesized intelligence strictly as a valid Markdown document. You **MUST** use exactly these H2 headers: `## The Customer Reality`, `## The Supplier Reality`, `## The Competitor Reality`, `## The Employee Reality`, `## The "Whisper" Consensus`, and `## ERC Risk Modifier`.
+- **Format:** You must output the synthesized intelligence strictly as a valid Markdown document. You **MUST** use exactly these H2 headers: `## The Customer Reality`, `## The Supplier Reality`, `## The Competitor Reality`, `## The Employee Reality`, `## The Management Reality`, `## The "Whisper" Consensus`, and `## ERC Risk Modifier`.
 - **Zero Hallucination & Signal Over Noise:** If the Deep Research inputs do not return verified controversies, you must explicitly state: "No significant external friction detected." Do not infer or invent drama. You must differentiate between isolated complaints (noise) and systemic, repeating issues (signal).
 - **Temporal Constraint:** Prioritize external realities, lawsuits, and employee sentiment from the last 1 to 3 years. Ignore historical controversies older than 3 years unless they remain structurally unresolved today.
 - **Exclusion of PR:** You must actively filter out and ignore SEO spam, corporate press releases, and sanitized mainstream news. Focus strictly on asymmetrical, third-party risk indicators.

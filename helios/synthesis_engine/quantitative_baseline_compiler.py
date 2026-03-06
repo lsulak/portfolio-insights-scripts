@@ -14,7 +14,8 @@ import logging
 import os
 
 from helios.config import GEMINI, SYNTHESIS_AGENT_SPECS_DIR, OutputDir
-from helios.utils.commons import DossierAnalyser, current_quarter
+from helios.utils.commons import format_dossier_section
+from helios.utils.dossier_analyser import DossierAnalyser
 
 logger = logging.getLogger(__name__)
 
@@ -37,19 +38,16 @@ class QuantitativeBaselineCompiler(DossierAnalyser):
         return GEMINI.quantitative_baseline_temperature
 
     def _build_output_path(self) -> str:
-        year, quarter = current_quarter()
+        year, quarter = self._current_quarter()
         filename = f"ledger_{year}-Q{quarter}.yaml"
         return os.path.join(self._ticker_dir(), OutputDir.QUANTITATIVE_BASELINE, filename)
 
     def _compile_dossier(self) -> str:
-        sections: list[str] = []
-        self._add_dossier_section(
-            sections, "EARNINGS CALL SYNTHESIS", self._collect_files(OutputDir.EARNINGS_CALLS, "*.md")
-        )
-        self._add_dossier_section(sections, "EDGAR FILINGS (latest first)", self._collect_edgar_filings())
-
-        if not sections:
-            raise FileNotFoundError(
-                f"No source documents found for {self.ticker}. " f"Run the extraction engine first."
-            )
-        return "\n".join(sections)
+        sections = [
+            format_dossier_section("EARNINGS CALL SYNTHESIS", self._collect_files(OutputDir.EARNINGS_CALLS, "*.md")),
+            format_dossier_section("EDGAR FILINGS (latest first)", self._collect_edgar_filings()),
+        ]
+        dossier = "\n\n".join(s for s in sections if s)
+        if not dossier:
+            raise FileNotFoundError(f"No source documents found for {self.ticker}. Run the extraction engine first.")
+        return dossier

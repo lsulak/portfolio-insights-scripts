@@ -21,7 +21,8 @@ import logging
 import os
 
 from helios.config import GEMINI, REASONING_AGENT_SPECS_DIR, OutputDir
-from helios.utils.commons import DossierAnalyser, current_quarter
+from helios.utils.commons import format_dossier_section
+from helios.utils.dossier_analyser import DossierAnalyser
 
 logger = logging.getLogger(__name__)
 
@@ -45,41 +46,40 @@ class FinalReportCompiler(DossierAnalyser):
         return GEMINI.final_report_temperature
 
     def _build_output_path(self) -> str:
-        year, quarter = current_quarter()
+        year, quarter = self._current_quarter()
         filename = f"report_{year}-Q{quarter}.md"
         return os.path.join(self._ticker_dir(), OutputDir.FINAL_REPORT, filename)
 
     def _compile_dossier(self) -> str:
-        sections: list[str] = []
-        self._add_dossier_section(
-            sections,
-            "QBC: QUANTITATIVE BASELINE PAYLOAD (YAML)",
-            self._collect_files(OutputDir.QUANTITATIVE_BASELINE, "*.yaml"),
-        )
-        self._add_dossier_section(
-            sections, "NV: NARRATIVE VALIDATION PAYLOAD", self._collect_files(OutputDir.NARRATIVE_VALIDATION, "*.md")
-        )
-        self._add_dossier_section(
-            sections, "SE: SECTOR ANALYSIS PAYLOAD", self._collect_files(OutputDir.SECTOR_ANALYSIS, "*.md")
-        )
-        self._add_dossier_section(
-            sections, "ME: MARKET ANALYSIS PAYLOAD", self._collect_files(OutputDir.MARKET_ANALYSIS, "*.md")
-        )
-        self._add_dossier_section(
-            sections, "VE: VALUATION ENGINE PAYLOAD", self._collect_files(OutputDir.STOCK_VALUATION, "*.md")
-        )
-        self._add_dossier_section(
-            sections, "BE: BUSINESS OVERVIEW PAYLOAD", self._collect_files(OutputDir.BUSINESS_OVERVIEW, "*.md")
-        )
-        self._add_dossier_section(
-            sections,
-            "ERC: EXTERNAL REALITY CHECK PAYLOAD",
-            self._collect_files(OutputDir.EXTERNAL_REALITY_CHECK, "*.md"),
-        )
-
-        if not sections:
+        sections = [
+            format_dossier_section(
+                "QBC: QUANTITATIVE BASELINE PAYLOAD (YAML)",
+                self._collect_files(OutputDir.QUANTITATIVE_BASELINE, "*.yaml"),
+            ),
+            format_dossier_section(
+                "NV: NARRATIVE VALIDATION PAYLOAD", self._collect_files(OutputDir.NARRATIVE_VALIDATION, "*.md")
+            ),
+            format_dossier_section(
+                "SE: SECTOR ANALYSIS PAYLOAD", self._collect_files(OutputDir.SECTOR_ANALYSIS, "*.md")
+            ),
+            format_dossier_section(
+                "ME: MARKET ANALYSIS PAYLOAD", self._collect_files(OutputDir.MARKET_ANALYSIS, "*.md")
+            ),
+            format_dossier_section(
+                "VE: VALUATION ENGINE PAYLOAD", self._collect_files(OutputDir.STOCK_VALUATION, "*.md")
+            ),
+            format_dossier_section(
+                "BE: BUSINESS OVERVIEW PAYLOAD", self._collect_files(OutputDir.BUSINESS_OVERVIEW, "*.md")
+            ),
+            format_dossier_section(
+                "ERC: EXTERNAL REALITY CHECK PAYLOAD",
+                self._collect_files(OutputDir.EXTERNAL_REALITY_CHECK, "*.md"),
+            ),
+        ]
+        dossier = "\n\n".join(s for s in sections if s)
+        if not dossier:
             raise FileNotFoundError(
                 f"No source documents found for {self.ticker}. "
                 f"Run the extraction, synthesis, and reasoning engines first."
             )
-        return "\n".join(sections)
+        return dossier

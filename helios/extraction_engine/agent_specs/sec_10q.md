@@ -11,7 +11,7 @@
 ## 3. Context (Extraction Details)
 - **Report Metadata:** Exact submission date, the specific quarter-ended date, the exact SEC form type (e.g., 10-Q, 10-Q/A), the company ticker symbol, and primary currency.
 - **Financial Statements:** Extract the FULL line-by-line quantitative tables for the following. You MUST explicitly distinguish between "Three Months Ended" (QTD) and "Nine/Six Months Ended" (YTD) data. Do not mix the integers; structure them as separate nested objects if both exist. Include geographic or product-segment breakdowns if explicitly reported:
-    - Income Statement (including also diluted shares oustanding if available)
+    - Income Statement (including also diluted shares outstanding if available)
     - Balance Sheet (including also net debt if available)
     - Cash Flow Statement (including also free cash flow if available)
 - **Revenue & Cost Structure:** Extract the exact categorical breakdown of revenue streams and the primary drivers of Cost of Goods Sold (COGS) / Operating Expenses. Do not summarize; use the company's exact terminology.

@@ -16,7 +16,8 @@ from helios.extraction_engine.edgar.domain import (
     EdgarFormType,
     LocalEdgarDocument,
 )
-from helios.utils.commons import GeminiExtractorAgent, GeminiFileManager, ResponseTypes
+from helios.utils.commons import ResponseTypes
+from helios.utils.gemini_client import GeminiExtractorAgent, GeminiFileManager
 
 logger = logging.getLogger(__name__)
 

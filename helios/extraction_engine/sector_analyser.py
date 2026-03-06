@@ -3,7 +3,7 @@
 import os
 
 from helios.config import GEMINI, OutputDir
-from helios.utils.commons import DeepResearchAnalyser
+from helios.utils.deep_research_analyser import DeepResearchAnalyser
 
 
 class SectorAnalyser(DeepResearchAnalyser):

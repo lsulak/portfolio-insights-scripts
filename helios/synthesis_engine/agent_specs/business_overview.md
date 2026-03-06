@@ -21,7 +21,7 @@
 
 ### Section 2: The Revenue Engine & Segments
 - **How It Earns:** Define the revenue model (e.g., high-volume/low-margin retail, high-margin SaaS, a two-sided marketplace, or a capital-intensive utility).
-- **Segment Evolution:** Using the `Quantitative Baseline` YAML, map exactly how the product mix and segment margins have mutated. (e.g., "Hardware previously drove 80% of revenue; today, high-margin cloud services drive 65%"). Using the `Quantitative Baseline` map the segment revenue concentration, TAM, and supply chain input sensitivities. Is the revenue consistently growing? Is the business economics predictable? Especially organing growth through pricing power, domestic and international expansion, and new verticals are preferable to growth built on aggressive M&A or financial engineering.
+- **Segment Evolution:** Using the `Quantitative Baseline` YAML, map exactly how the product mix and segment margins have mutated. (e.g., "Hardware previously drove 80% of revenue; today, high-margin cloud services drive 65%"). Using the `Quantitative Baseline` map the segment revenue concentration, TAM, and supply chain input sensitivities. Is the revenue consistently growing? Is the business economics predictable? Especially organic growth through pricing power, domestic and international expansion, and new verticals are preferable to growth built on aggressive M&A or financial engineering.
 
 ### Section 3: Cost Structure & Unit Economics
 - **The Expense Drivers:** Using the `Last Few Earnings Calls` and the 10-K `business` section, define the primary drivers of Cost of Goods Sold (COGS) and Operating Expenses (OpEx). 
