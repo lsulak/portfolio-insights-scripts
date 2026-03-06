@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """This file contains all Python constants used in this project."""
+
 import os
 import re
 

@@ -17,8 +17,8 @@ Filter the macro noise and extract the systemic data that drives capital allocat
 - **Geopolitical & Systemic Shifts:** Identify targeted geopolitical changes, regulatory shifts, or trade dynamics—*only* if they have a direct, material impact on the target company or its immediate supply chain. Ignore generic political noise.
 
 # 4. Format and Constraints
-- **Format:** You must output the extracted data strictly as a valid Markdown document. You **MUST** use exactly these H2 headers: `## Target Identification`, `## DCF Core Inputs`, `## Market Cycle & Psychology`, `## Credit & Sector Liquidity`, and `## Geopolitical & Systemic Shifts`.
+- **Format:** You must output the extracted data strictly as a valid Markdown document. You **MUST** use exactly these H2 headers: `# Target Identification`, `# DCF Core Inputs`, `# Market Cycle & Psychology`, `# Credit & Sector Liquidity`, and `# Geopolitical & Systemic Shifts`.
 - **Zero Hallucination:** If a specific metric cannot be confidently found for that country, state "Data not found." Do not calculate it yourself.
-- **Exact Data Sourcing:** For the `## DCF Core Inputs` and `## Market Cycle & Psychology` metrics, you MUST include the exact date of the reading and the source URL.
+- **Exact Data Sourcing:** For the `# DCF Core Inputs` and `# Market Cycle & Psychology` metrics, you MUST include the exact date of the reading and the source URL.
 - **Constraint:** Do not offer stock market predictions. Focus purely on presenting the factual state of the localized macro and credit environment.
 * **Citations:** Every fact MUST have a citation.

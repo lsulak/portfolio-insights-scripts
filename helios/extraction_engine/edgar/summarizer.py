@@ -55,7 +55,9 @@ class EdgarDocumentSummarizer:
             )
             return True
 
-        rendered_spec = self._render_agent_spec(doc.form_type, agent_spec_template, doc.ticker, is_most_recent_of_its_type)
+        rendered_spec = self._render_agent_spec(
+            doc.form_type, agent_spec_template, doc.ticker, is_most_recent_of_its_type
+        )
         doc.file_path_ai_ready = self._prepare_document(doc)
 
         ai_file = None
@@ -66,10 +68,10 @@ class EdgarDocumentSummarizer:
             )
             ai_file = await self._file_manager.upload_for_inference(doc.file_path_ai_ready, doc.mime_type)
             raw_summary = await self._extractor.generate(
-                ai_file, 
-                rendered_spec, 
-                temperature=GEMINI.extractor_temperature, 
-                response_mime_type=ResponseTypes.APPLICATION_JSON.value
+                ai_file,
+                rendered_spec,
+                temperature=GEMINI.extractor_temperature,
+                response_mime_type=ResponseTypes.JSON.value,
             )
 
             self._save_json(output_file, raw_summary)
@@ -114,7 +116,9 @@ class EdgarDocumentSummarizer:
         if form_type == EdgarFormType.ANNUAL_REPORT:
             addition = AGENT_ADDITIONS_FIRST_10K_ONLY if is_most_recent else ""
             if is_most_recent:
-                logger.info(f"Using enhanced specs for most recent {form_type} filing of {ticker} with business and risk factor context.")
+                logger.info(
+                    f"Using enhanced specs for most recent {form_type} filing of {ticker} with business and risk factor context."
+                )
             return base_spec.render(business_and_risk=addition, ticker=ticker)
         return base_spec.render(ticker=ticker)
 

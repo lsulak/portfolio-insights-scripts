@@ -33,7 +33,7 @@ You must apply strict temporal weighting to your analysis of this narrative arc:
 - Based on pricing actions, capital intensity shifts, and customer retention mentioned across all texts, evaluate if the company's competitive moat is currently expanding or deteriorating compared to its Historical Era baseline.
 
 # 4. Format and Constraints
-- **Format:** You must output the synthesized audit strictly as a valid Markdown document. You **MUST** use exactly these H2 headers: `## Narrative vs. Reality`, `## Micro vs. Macro Alignment`, `## Capital Allocation & Insider Alignment`, `## Emerging Asymmetrical Risks`, and `## Structural Moat Updates`.
+- **Format:** You must output the synthesized audit strictly as a valid Markdown document. You **MUST** use exactly these H2 headers: `# Narrative vs. Reality`, `# Micro vs. Macro Alignment`, `# Capital Allocation & Insider Alignment`, `# Emerging Asymmetrical Risks`, and `# Structural Moat Updates`.
 - **Debugging Mode (Strict Sourcing):** Every synthesized claim MUST include a citation of the specific input file and timeframe it originated from (e.g., *"The Q3 2025 Earnings Call stated X, but the Sector report indicates Y"*).
 - **Constraint:** Do not calculate intrinsic values or project future cash flows. Focus entirely on the integrity, alignment, and contradictions of the strategic narrative.
 - **Zero Hallucination:** Do not invent controversies or infer malice if the data does not explicitly support it. State findings objectively.

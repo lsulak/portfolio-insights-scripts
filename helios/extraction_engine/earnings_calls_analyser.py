@@ -10,7 +10,7 @@ from helios.utils.commons import DeepResearchAnalyser
 class EarningsCallAnalyser(DeepResearchAnalyser):
     """Earnings call transcript analysis via Gemini Deep Research Agent."""
 
-    AGENT_SPEC_FILENAME = "earnings_calls.md"
+    AGENT_SPEC_FILENAME = "earnings_calls_analysis.md"
 
     def _get_model(self) -> str:
         return GEMINI.earnings_call_analysis_model

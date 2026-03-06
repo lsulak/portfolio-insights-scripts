@@ -18,12 +18,12 @@ Before executing the math, establish your baseline parameters:
 # 4. Mathematical Execution Protocol
 
 ## Exercise 1: Intrinsic Valuation (10-Year Damodaran DCF @ 15% Hurdle)
-You must execute a 2-Stage DCF. To prevent calculation errors, you MUST show your step-by-step arithmetic for every year (e.g., `Year 2 Revenue = 100 * 1.15 = 115`).
+You must execute a 2-Stage DCF. To prevent calculation errors, you MUST show your step-by-step arithmetic for every year (e.g., `Year 2 Revenue = 100 * 1.15 = 115`). 
 
 - **Discount Rate:** Fixed **15.0%**.
 - **Fundamental Formulas:**
   - **Free Cash Flow to Firm:** $$FCFF = EBIT \times (1 - t) + D\&A - CapEx - \Delta NWC$$
-  - **Reinvestment Rate:** $$RR = \frac{CapEx - D\&A + \Delta NWC}{EBIT \times (1 - t)}$$
+  - **Reinvestment Rate:** $$RR = \frac{CapEx - D\&A + \Delta NWC}{EBIT \times (1 - t)}$$ but be aware of company profile and adjust the rate over time (past reinvestment rates might not be a good indication of future reinvestment rates)
   - **Return on Invested Capital:** $$ROIC = \frac{EBIT \times (1 - t)}{Debt + Equity - Cash}$$
   - **Implied Growth Constraint:** $$g = RR \times ROIC$$
   - **Present Value:** $$PV = \frac{FCFF_t}{(1 + 0.15)^t}$$
@@ -38,24 +38,24 @@ You must execute a 2-Stage DCF. To prevent calculation errors, you MUST show you
 
 ## Exercise 2: Relative Valuation (Pricing vs. History & Peers)
 - **Historical Context:** Compare current multiples **P/S, P/E, P/B, P/FCF, and P/OCF** against the **10-year historical medians** (from `Quantitative Baseline Payload`) for each metric.
-- **Peer Context:** Compare current multiples **P/S, P/E, and P/FCF** against the top 3 rivals (from `Sector Analysis Payload`).
+- **Peer Context:** Compare current multiples **P/S, P/E, and P/FCF** against the top 3 rivals (from `Sector Analysis Payload`) along with the average of the last 3 years of revenue growth and operating margins.
 
 ## Exercise 3: Reverse DCF (The Expectations Test)
 - **The Question:** "What FCF CAGR is the market currently pricing in for the next 5 years to justify the current Market Cap?"
 - **The Reality Check:** Compare this Market-Implied Growth against the 10-year historical CAGR and the **Forward Guidance** in the `Quantitative Baseline Payload`. Flag if the market is pricing in unprecedented execution.
 
 # 5. Calculation Logic & Constraints
-- **Damodaran Reinvestment Rule (No Free Growth):** You must show the **Reinvestment Rate** required to achieve your growth assumptions. If revenue grows, reinvestment (CapEx or Working Capital) must proportionally increase.
+- **Damodaran Reinvestment Rule (No Free Growth):** You must show the **Reinvestment Rate** required to achieve your growth assumptions. If revenue grows, reinvestment (CapEx or Working Capital) should proportionally increase, but take into consideration the company profile and put things into broader and historical perspective (if the company spends massive amount of money in the last few years for CAPEX, this surely IS NOT supposed to be the standard for the next 10 years!).
 - **Negative Base Year FCF:** If trailing 12-month FCFF is negative, use the 3-year historical average FCFF as the Year 0 baseline to prevent a broken base-year extrapolation.
-- **Sensitivity Matrix:** 3x3 table showing Intrinsic Value at varying Revenue Growth (rows) and Operating Margins (columns) at the 15% discount rate.
+- **Sensitivity Matrix:** 3x3 table showing Intrinsic Value at varying Revenue Growth (rows) and Operating Margins along with reinvestment rates (columns) at the 15% discount rate. Calculate three scenarios - bull, base, and bear case.
 - **Missing Data (Nulls):** If `Quantitative Baseline Payload` provides a `null` for CapEx or D&A, use the Sector Average from the `Sector Analysis Payload` and flag it.
 - **ROIC Distortion:** If the calculated baseline ROIC exceeds 100% (often due to depleted book equity), cap the modeled ROIC at 50% for Stage 1.
 - **Currency Alignment Check:** Before calculating the final Margin of Safety, you must verify that the Market Price extracted by the `Market Analysis Payload` is in the exact same currency as the reported_currency from the `Quantitative Baseline Payload`. If there is a mismatch (e.g., `Quantitative Baseline Payload` is in EUR, `Market Analysis Payload` price is an ADR in USD), you must explicitly flag this mismatch and refrain from calculating a final +/- % Margin of Safety.
 
 # 6. Output Format
 Your final output must be strictly formatted Markdown:
-1.  **## Parameter Translation Log:** Trace the narrative inputs to your math adjustments.
-2.  **## Exercise 1: 15% Hurdle Intrinsic Value:** Print a Markdown table showing Years 1 through 10 (Revenue, EBIT, Reinvestment, FCFF, PV) and state the Growth Dependency Ratio. Show the Firm-to-Equity bridge.
-3.  **## Exercise 2: Relative Valuation:** Include a table comparing Current vs. Historical 10-Year Median vs. Peers.
-4.  **## Exercise 3: Reverse DCF Expectations:** State the Implied CAGR vs. Historical CAGR.
-5.  **## The Margin of Safety Summary:** Final +/- % gap between Market Price and the 15% Hurdle Value, including any Integrity Haircuts applied.
+1.  **# Parameter Translation Log:** Trace the narrative inputs to your math adjustments.
+2.  **# Exercise 1: 15% Hurdle Intrinsic Value:** Print a Markdown table showing Years 1 through 10 (Revenue, EBIT, Reinvestment, FCFF, PV) and state the Growth Dependency Ratio. Show the Firm-to-Equity bridge.
+3.  **# Exercise 2: Relative Valuation:** Include a table comparing Current vs. Historical 10-Year Median vs. Peers.
+4.  **# Exercise 3: Reverse DCF Expectations:** State the Implied CAGR vs. Historical CAGR.
+5.  **# The Margin of Safety Summary:** Final +/- % gap between Market Price and the 15% Hurdle Value, including any Integrity Haircuts applied. Put into context also Relative Valuation and Reverse DCF.

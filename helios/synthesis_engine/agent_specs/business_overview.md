@@ -33,7 +33,7 @@
 - **Single Points of Failure:** What are the physical and systemic operational risks? Cross-reference the 10-K `risk_factors` with the `Narrative Validator` to highlight critical vulnerabilities (e.g., reliance on a single fab, extreme geographic concentration, regulatory exposure).
 
 # 4. Format and Constraints
-- **Format:** You must output the synthesized primer strictly as a valid Markdown document. You **MUST** use exactly these H2 headers: `## The Origin & The Machine`, `## The Revenue Engine & Segments`, `## Cost Structure & Unit Economics`, `## A Decade of Execution`, and `## Moat & Operational Fragility`.
+- **Format:** You must output the synthesized primer strictly as a valid Markdown document. You **MUST** use exactly these H2 headers: `# The Origin & The Machine`, `# The Revenue Engine & Segments`, `# Cost Structure & Unit Economics`, `# A Decade of Execution`, and `# Moat & Operational Fragility`.
 - **Zero Hallucination (General):** If market share percentages, historical milestones, or specific supply chain leverage cannot be explicitly verified in the provided payloads, state "Not explicitly verifiable." Do not guess.
 - **Zero Hallucination (Metrics/Risks):** If a specific metric, risk, or guidance figure is not explicitly mentioned in the inputs, you must state "Not mentioned." Do not infer, guess, or calculate missing numbers.
 - **Objective Framing:** Do not cheerlead for the company or the sector. Frame all historical growth opportunities and operational pivots alongside the structural cost of competing and the acute physical risks.

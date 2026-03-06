@@ -41,7 +41,7 @@ class GeminiConfig:
     # --- .env (required) ---
     api_key: str = field(repr=False)
     max_parallel_calls: int
-    
+
     edgar_extractor_model: str
     earnings_call_analysis_model: str
     market_analysis_model: str
@@ -65,7 +65,7 @@ class GeminiConfig:
     stock_valuation_temperature: float = 0.0
     business_overview_temperature: float = 0.0
     final_report_temperature: float = 0.0
-    
+
     max_chars_per_document: int = 900_000
 
 
@@ -116,6 +116,7 @@ class OutputDir:
     EXTERNAL_REALITY_CHECK = "external_reality_check"
     FINAL_REPORT = "final_report"
 
+
 # ==========================================
 # PATH CONSTANTS
 # ==========================================
@@ -136,8 +137,7 @@ DEFAULT_TICKER = os.getenv("TESTING_TICKER", "GOOGL")
 GEMINI = GeminiConfig(
     api_key=_env("GEMINI_API_KEY"),
     max_parallel_calls=int(_env("GEMINI_MAX_PARALLEL_CALLS")),
-
-    edgar_extractor_model=_env("EXTRACTOR_MODEL"),
+    edgar_extractor_model=_env("EDGAR_EXTRACTOR_MODEL"),
     earnings_call_analysis_model=_env("EARNINGS_CALL_ANALYZER_MODEL"),
     market_analysis_model=_env("MARKET_ANALYSIS_MODEL"),
     sector_analysis_model=_env("SECTOR_ANALYSIS_MODEL"),

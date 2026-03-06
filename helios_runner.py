@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""HELIOS Pipeline - Main entry point for the multi-layered AI agent orchestraor
+"""HELIOS Pipeline - Main entry point for the multi-layered AI agent orchestrator
 for company and its stock analysis.
 
 It's a multi-layered AI system that orchestrates various specialized "agents" to perform a comprehensive analysis of a company and its stock. Steps:
     1A. Extract & Parse (EE, ETE) [Input EE: EDGAR, Ouptut EE: JSON; Input ETE: Deep Research of Earnings Calls Transcripts on the Internet, Output ETE: Markdown]
-    1B. Extract & Summarize & Synthetize (SE, ME) [Input: Deep Research on the Internet, Output: Markdown]
+    1B. Extract & Summarize & Synthesize (SE, ME) [Input: Deep Research on the Internet, Output: Markdown]
     2A. Compile the Math (QBC) [Input: 1A, Output: Yaml]
     2B. Audit the Narrative (NV) [Input: 1A, SE, Output: Markdown]
     3A. Valuate the Business (VE) [Input: QBC, NV, SE, Output: Markdown]
@@ -15,7 +15,8 @@ It's a multi-layered AI system that orchestrates various specialized "agents" to
 So Deep Search with Internet only: ETE, SE, ME, ERC - so 4x (cost maybe $6 per run) but never more than 3x in parallel.
 
 TODOs
-* Finalize code!
+* Busniess overview not good enough - revenue segments and their evolution over time, cost structure, key 
+  milestones and catalysts, moat analysis - it only works with last 10K so need more data - this perhaps could be using search?
 * Later: Upload some results to Google Drive? Maybe at least those that the final layer will work with? So that I can read it and rerun from Gemini Web UI
 """
 
@@ -39,7 +40,7 @@ from helios.extraction_engine.sector_analyser import SectorAnalyser
 from helios.synthesis_engine.narrative_validator import NarrativeValidator
 from helios.synthesis_engine.quantitative_baseline_compiler import QuantitativeBaselineCompiler
 from helios.synthesis_engine.stock_valuation_engine import StockValuationEngine
-from helios.synthesis_engine.business_overview_synthetizer import BusinessOverviewSynthetizer
+from helios.synthesis_engine.business_overview_synthesizer import BusinessOverviewSynthesizer
 from helios.reasoning_engine.external_reality_checker import ExternalRealityChecker
 from helios.reasoning_engine.final_report_compiler import FinalReportCompiler
 from helios.utils.cli_parser import parse_cli_args
@@ -75,93 +76,103 @@ def setup_logging() -> None:
 async def main(args) -> int:
     """Main entry point for the HELIOS pipeline.
 
-    Orchestration order:
+    Orchestration order (each layer waits for the previous one):
         Layer 1: EE, ETE, SE, ME  (all 4 extraction engines in parallel)
-        Layer 2: NV + QBC         (narrative validator & quantitative baseline in parallel)
-        Layer 3: VE + BE          (stock valuation & business overview in parallel)
+        Layer 2: NV + QBC         (narrative validator & quantitative baseline)
+        Layer 3: VE + BE          (stock valuation & business overview)
         Layer 4: ERC              (external reality check)
+        Layer 5: CE               (final report)
     """
     data_dir = os.path.join(CURR_SCRIPT_DIR, "data", "helios")
     os.makedirs(data_dir, exist_ok=True)
 
     client = genai.Client(api_key=GEMINI.api_key)
-    common_kwargs = dict(client=client, output_base_dir=data_dir, ticker=args.ticker)
-    force_all = args.force_resummarize_all
+    common = dict(client=client, output_base_dir=data_dir, ticker=args.ticker)
 
-    # ── Layer 1: Extraction engines (all 4 concurrent) ───────────────
-    logger.info("═══ Layer 1: Extraction Engines ═══")
-    extraction_names = (
-        EdgarExtractionPipeline.__name__,
-        EarningsCallAnalyser.__name__,
-        SectorAnalyser.__name__,
-        MarketAnalyser.__name__,
-    )
-    extraction_results = await asyncio.gather(
-        EdgarExtractionPipeline(**common_kwargs, force_resummarize=force_all or args.force_resummarize_edgar).run(),
-        EarningsCallAnalyser(**common_kwargs, force_resummarize=force_all or args.force_resummarize_earnings).run(),
-        SectorAnalyser(**common_kwargs, force_resummarize=force_all or args.force_resummarize_sector).run(),
-        MarketAnalyser(**common_kwargs, force_resummarize=force_all or args.force_resummarize_market).run(),
-        return_exceptions=True,
-    )
+    # ── Layer 1: Extraction Engines ──────────────────────────────────
+    await _run_extraction_layer(common, args.force_resummarize_all, args) # some can fail for now
 
-    any_failed = _report_results(extraction_names, extraction_results)
-
-    edgar_result = extraction_results[0]
-    if isinstance(edgar_result, BaseException) or not edgar_result.all_passed:
-        logger.error("Edgar extraction failed — cannot proceed to synthesis layers.")
-        return 1
-    if any_failed:
-        logger.error("One or more extraction engines failed — cannot proceed to synthesis layers.")
+    # ── Layer 2: Narrative Validator + Quantitative Baseline ─────────
+    if not await _run_layer(
+        "Narrative Validator & Quantitative Baseline",
+        NarrativeValidator(**common, force_resummarize=args.force_resummarize_all),
+        QuantitativeBaselineCompiler(**common, force_resummarize=args.force_resummarize_all),
+    ):
         return 1
 
-    # ── Layer 2: NV + QBC (parallel) ─────────────────────────────────
-    logger.info("═══ Layer 2: Narrative Validator & Quantitative Baseline ═══")
-    layer2_names = (NarrativeValidator.__name__, QuantitativeBaselineCompiler.__name__)
-    layer2_results = await asyncio.gather(
-        NarrativeValidator(**common_kwargs, force_resummarize=force_all).run(),
-        QuantitativeBaselineCompiler(**common_kwargs, force_resummarize=force_all).run(),
-        return_exceptions=True,
-    )
-
-    if _report_results(layer2_names, layer2_results):
-        logger.error("Layer 2 failed — cannot proceed to valuation layer.")
-        return 1
-
-    # ── Layer 3: VE + BE (parallel) ──────────────────────────────────
-    logger.info("═══ Layer 3: Stock Valuation & Business Overview ═══")
-    layer3_names = (StockValuationEngine.__name__, BusinessOverviewSynthetizer.__name__)
-    layer3_results = await asyncio.gather(
-        StockValuationEngine(**common_kwargs, force_resummarize=force_all).run(),
-        BusinessOverviewSynthetizer(**common_kwargs, force_resummarize=force_all).run(),
-        return_exceptions=True,
-    )
-
-    if _report_results(layer3_names, layer3_results):
-        logger.error("Layer 3 failed — cannot proceed to external reality check.")
+    # ── Layer 3: Stock Valuation + Business Overview ─────────────────
+    if not await _run_layer(
+        "Stock Valuation & Business Overview",
+        StockValuationEngine(**common, force_resummarize=args.force_resummarize_all),
+        BusinessOverviewSynthesizer(**common, force_resummarize=args.force_resummarize_all),
+    ):
         return 1
 
     # ── Layer 4: External Reality Check ──────────────────────────────
-    logger.info("═══ Layer 4: External Reality Check ═══")
-    try:
-        await ExternalRealityChecker(**common_kwargs, force_resummarize=force_all).run()
-    except Exception as e:
-        logger.error(f"❌ ExternalRealityChecker failed: {type(e).__name__}: {e}")
+    if not await _run_layer(
+        "External Reality Check", 
+        ExternalRealityChecker(**common, force_resummarize=args.force_resummarize_all)
+    ):
         return 1
 
     # ── Layer 5: Final Report ────────────────────────────────────────
-    logger.info("═══ Layer 5: Final Report ═══")
-    try:
-        await FinalReportCompiler(**common_kwargs, force_resummarize=force_all).run()
-    except Exception as e:
-        logger.error(f"❌ FinalReportCompiler failed: {type(e).__name__}: {e}")
+    if not await _run_layer(
+        "Final Report", 
+        FinalReportCompiler(**common, force_resummarize=args.force_resummarize_all)
+    ):
         return 1
 
     logger.info("✅ HELIOS pipeline completed successfully.")
     return 0
 
 
-def _report_results(names: tuple, results: tuple) -> bool:
-    """Log per-analyser outcomes. Returns True if any failed."""
+# ------------------------------------------------------------------
+# Layer runners
+# ------------------------------------------------------------------
+
+
+async def _run_layer(label: str, *analysers) -> bool:
+    """Run one or more analysers concurrently. Returns True if all succeeded."""
+    logger.info(f"═══ {label} ═══")
+    names = tuple(type(a).__name__ for a in analysers)
+
+    results = await asyncio.gather(*(a.run() for a in analysers), return_exceptions=True)
+    if _has_failures(names, results):
+        logger.error(f"{label} failed — aborting pipeline.")
+        return False
+    return True
+
+
+async def _run_extraction_layer(common: dict, force_all: bool, args) -> bool:
+    """Layer 1: run all 4 extraction engines and validate Edgar results.
+
+    Edgar is special — even if it finishes without an exception, we still
+    check ``EdgarExtractionResult.all_passed`` to catch per-filing failures.
+    """
+    logger.info("═══ Extraction Engines ═══")
+    analysers = (
+        EdgarExtractionPipeline(**common, force_resummarize=force_all or args.force_resummarize_edgar),
+        EarningsCallAnalyser(**common, force_resummarize=force_all or args.force_resummarize_earnings),
+        SectorAnalyser(**common, force_resummarize=force_all or args.force_resummarize_sector),
+        MarketAnalyser(**common, force_resummarize=force_all or args.force_resummarize_market),
+    )
+    names = tuple(type(a).__name__ for a in analysers)
+    results = await asyncio.gather(*(a.run() for a in analysers), return_exceptions=True)
+
+    any_failed = _has_failures(names, results)
+
+    edgar_result = results[0]
+    if isinstance(edgar_result, BaseException) or not edgar_result.all_passed:
+        logger.error("Edgar extraction failed — cannot proceed to synthesis layers.")
+        return False
+    if any_failed:
+        logger.error("One or more extraction engines failed — cannot proceed to synthesis layers.")
+        return False
+    return True
+
+
+def _has_failures(names: tuple, results: tuple) -> bool:
+    """Log per-analyser exceptions. Returns True if any failed."""
     any_failed = False
     for name, result in zip(names, results):
         if isinstance(result, BaseException):

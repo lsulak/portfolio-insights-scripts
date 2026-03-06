@@ -24,6 +24,7 @@ Important: At the time of writing this documentation, I was not trading with bon
 futures and so this script would presumably filter out such transactions; this
 functionality might be implemented in the future though.
 """
+
 import glob
 import io
 import logging.config

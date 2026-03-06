@@ -13,6 +13,7 @@ where each line represents a single buy/sell/dividends/fees transaction.
 
 Note: Please see more detailed info about the usage supplied by the `--help` CLI parameter.
 """
+
 import argparse
 import importlib
 import logging.config

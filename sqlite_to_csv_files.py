@@ -3,6 +3,7 @@
 """This is a helper script that just exports all tables in the input SQLite DB into a list of CSV
 files for easier end-user consumption.
 """
+
 import argparse
 import logging.config
 import os

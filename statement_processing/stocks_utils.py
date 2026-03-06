@@ -2,6 +2,7 @@
 """This module implements some additional utilities related to stocks - such as, adding a missing exchange symbols, or
 capturing ticker symbol rename operation and so on.
 """
+
 import logging
 from functools import cache
 

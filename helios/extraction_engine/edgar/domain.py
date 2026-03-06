@@ -70,7 +70,8 @@ _FORM_TO_SPEC_FILE = {
 def _load_all_agent_specs() -> dict[EdgarFormType, Template]:
     """Load all Edgar agent specs from Markdown files into Jinja2 templates."""
     return {
-        form_type: load_agent_spec(EXTRACTION_AGENT_SPECS_DIR / filename) for form_type, filename in _FORM_TO_SPEC_FILE.items()
+        form_type: load_agent_spec(EXTRACTION_AGENT_SPECS_DIR / filename)
+        for form_type, filename in _FORM_TO_SPEC_FILE.items()
     }
 
 
