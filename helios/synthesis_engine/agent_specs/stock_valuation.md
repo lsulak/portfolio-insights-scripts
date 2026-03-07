@@ -22,15 +22,21 @@ You must execute a 2-Stage DCF. To prevent calculation errors, you MUST show you
 
 - **Discount Rate:** Fixed **15.0%**.
 - **Fundamental Formulas:**
-  - **Free Cash Flow to Firm:** $$FCFF = EBIT \times (1 - t) + D\&A - CapEx - \Delta NWC$$
-  - **Reinvestment Rate:** $$RR = \frac{CapEx - D\&A + \Delta NWC}{EBIT \times (1 - t)}$$
-  - **Return on Invested Capital:** $$ROIC = \frac{EBIT \times (1 - t)}{Debt + Equity - Cash}$$
-  - **Implied Growth Constraint:** $$g = RR \times ROIC$$
+  - **Free Cash Flow to Firm:** $$FCFF = EBIT \times (1 - t) - Reinvestment$$
+  - **Standard Reinvestment:** $$Reinvestment = CapEx - D\&A + \Delta NWC$$
+  - **Standard Reinvestment Rate:** $$RR = \frac{Reinvestment}{EBIT \times (1 - t)}$$
+  - **Return on Invested Capital:** $$ROIC = \frac{EBIT \times (1 - t)}{Invested\ Capital}$$
   - **Present Value:** $$PV = \frac{FCFF_t}{(1 + 0.15)^t}$$
 - **Stock Based Compensation:** Treat Stock-Based Compensation (SBC) strictly as a cash expense.
-- **The CapEx Normalization & Fade Rule (CRITICAL):** If the current Reinvestment Rate is temporarily distorted by a massive CapEx cycle (e.g., RR > 100% or severely misaligned with revenue growth), you are strictly forbidden from extrapolating it in a straight line. 
-   1. **Stage 1 Normalization:** Anchor the initial Forecast Reinvestment Rate to the 10-year historical average or the industry average from the `Sector Analysis Payload`, NOT the anomalous current year(s).
-   2. **Terminal Reinvestment Math:** By Year 10, the Reinvestment Rate MUST mathematically fade to exactly: $$RR_{terminal} = \frac{Terminal Growth Rate}{Terminal ROIC (15\%)}$$. You must show this fade step-by-step.
+- **The Hyper-Growth Reinvestment Override (CRITICAL):** You are strictly forbidden from using the Standard Reinvestment Rate formula ($RR = Reinvestment / NOPAT$) if the company meets **ANY** of the following structural distortion triggers:
+  1. **The Cash Burn Trigger:** The standard formula results in deeply negative FCFF while projected Revenue Growth remains high (e.g., > 15%).
+  2. **The Historical Distortion Trigger:** The current standard RR is drastically higher than both the industry average (from `Sector Analysis Payload`) AND the company's own historical baseline from 5-10 years ago (prior to the current CapEx cycle).
+  
+  If these triggers are met, the NOPAT denominator is too depressed to use. You MUST switch to the **Damodaran Sales-to-Capital Method**:
+  1. **Stage 1 Reinvestment (Years 1-5):** Calculate absolute Reinvestment dollars by dividing the year-over-year change in revenue by the industry Sales-to-Capital ratio. $$Reinvestment_t = \frac{Revenue_t - Revenue_{t-1}}{Sales/Capital\ Ratio}$$. 
+  2. **The Ratio Anchor:** Calculate the Sales-to-Capital ratio from historical average from `Quantitative Baseline Payload`. Then, gather it also from the `Sector Analysis Payload` if provided, and use the bigger of the two.
+  3. **Terminal Reinvestment Math:** By Year 10, regardless of which method you used in Stage 1, the Reinvestment Rate MUST mathematically fade to exactly: $$RR_{terminal} = \frac{Terminal Growth Rate}{Terminal ROIC (15\%)}$$. You must show this fade step-by-step.
+
 - **Stage 1: Forecast Period (Years 1-5):** Project Revenue, EBIT, Reinvestment, and FCFF year-by-year using the parameters from the Translation Matrix.
 - **Stage 2: The Linear Fade (Years 6-10):** *Do not use complex decay curves.* 
   - **The Fade Math:** Calculate the difference between your Year 5 Growth Rate and the Terminal Risk-Free Rate ($R_f$). Divide this difference by 5. Subtract this exact linear step from the growth rate for each subsequent year (Years 6, 7, 8, 9, 10).

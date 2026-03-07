@@ -6,7 +6,7 @@
 ## 2. Task
 - Your goal is to autonomously synthesize a structural overview of the sector in which `{{ TICKER }}` operates.
 - **Discovery Phase:** First, search to identify `{{ TICKER }}`. Determine its primary industry and its core geographic operating region (which may be global, or highly localized).
-- **Search Strategy:** Use Google Search to find industry reports, competitor earnings calls, supply chain analyses, and market share data specific to the discovered industry and geographic region. Reformulate searches to find specific capital expenditure trends across the entire sector.
+- **Search Strategy:** Use Google Search to find industry reports, competitor earnings calls, supply chain analyses, and market share data specific to the discovered industry and geographic region. **Crucially, search for Aswath Damodaran's most recent "Capital Intensity" or "Sales-to-Capital" industry datasets for this specific sector.** Use other sources if there is no such informatoin. Reformulate searches to find specific capital expenditure trends across the entire sector.
 
 ## 3. Context (Extraction Details)
 Extract the structural physics of the sector within the target's operating region:
@@ -14,6 +14,7 @@ Extract the structural physics of the sector within the target's operating regio
 - **The Capital Cycle & Supply Dynamics:** Where is the industry in its capital cycle? Are competitors aggressively expanding capacity and over-investing (a leading indicator of future poor returns), or is the sector consolidating and starving for capital (a leading indicator of high future returns for survivors)?
 - **Value Chain & Pricing Power:** Map the leverage in the system. Who holds the pricing power—the suppliers, the manufacturers, or the end-distributors? (e.g., Does this sector rely on a monopolistic supplier that squeezes their margins?)
 - **Competitive Landscape & Rivalry:** Identify the top 3 direct competitors to `{{ TICKER }}` within the discovered region. Characterize the market structure (e.g., fragmented, regional oligopoly, global winner-take-all) and recent market share shifts. Is competition rational, or is there a destructive pricing war? Gather current relative valuation metrics **P/S, P/E, and P/FCF** for them, along with the average of the last 3 years of revenue growth and operating margins.
+  - **The Sales-to-Capital Extraction:** You MUST extract or calculate the industry average **Sales-to-Capital Ratio**. If you cannot find a published industry aggregate, calculate the average ratio for the top 3 competitors using this exact formula: `Sales / (Total Debt + Book Equity - Cash)` and average it over the last 5 years. Explicitly state this final ratio, as it is strictly required for downstream valuation overrides.
 - **Sector Asymmetrical Risks & Disruption:** Identify existential threats. Is there an asymmetrical technological shift (substitution risk) that could render the entire sector obsolete? Are there severe regulatory choke points specific to this region?
 
 ## 4. Format and Constraints
