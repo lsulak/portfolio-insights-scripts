@@ -13,7 +13,7 @@
 - **SEC Item Codes:** Extract an array of all exact "Item" numbers listed in the filing (e.g., ["Item 1.01", "Item 5.02"]).
 - **Event Categorization:** Classify the primary nature of the event into one of the following exact string flags: `LEADERSHIP_CHANGE`, `ACQUISITION_DISPOSITION`, `BANKRUPTCY_RECEIVERSHIP`, `FINANCIAL_RESULTS`, `REGULATORY_ISSUE`, or `OTHER_MATERIAL_EVENT`.
 - **Event Summary:** A concise, literal summary of the transaction, departure, or event. Maximum 3 sentences. Do not use complex formatting or quotes.
-- **Asymmetrical Risk & Moat Impacts:** Extract an array of short strings (bullet points) identifying any explicit changes to capital allocation, structural risks, or competitive positioning caused by this event. If none are explicitly clear, return an empty array `[]`.
+- **Asymmetrical Risk & Competitive Impacts:** Extract an array of short strings (bullet points) identifying any explicit changes to capital allocation, structural risks, or competitive positioning caused by this event. If none are explicitly clear, return an empty array `[]`.
 
 ## 4. Constraints
 - **Strict JSON Contract:** You must output the extracted data strictly as a minified, valid JSON object. Section names must be lowercase with underscores.

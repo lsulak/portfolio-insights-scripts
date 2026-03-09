@@ -11,13 +11,14 @@
 Filter the transcript noise and extract only the data that drives long-term intrinsic valuation and business fundamentals:
 - **Report Metadata:** Exact submission dates for the earnings, type (Earnings Call Transcript), the company ticker symbol, and primary currency.
 - **Core Value Drivers:** Do not extract every number. Isolate the key structural metrics: Revenue run-rates, operating margin trajectory, Free Cash Flow, and any unit-level economic KPIs explicitly mentioned.
-- **Capital Allocation:** Forward-looking CapEx guidance, R&D investments, M&A strategy, share buybacks, and ROI on invested capital.
+- **Growth and Margins Guidance:** Forward-looking revenue and profit growth guidance as well as future profit margins - if this is not provided by the company, flag it as "Not mentioned".
+- **Capital Allocation Guidance:** Forward-looking CapEx guidance, R&D investments, M&A strategy, share buybacks, and ROI on invested capital.
 - **Asymmetrical Risks & Headwinds:** Any macroeconomic vulnerabilities, supply chain dependencies, regulatory threats, or structural shifts mentioned by management or probed by analysts.
-- **Moat & Competitive Dynamics:** Mentions of pricing power, customer retention/churn, or competitive differentiation.
+- **Pricing Power & Market Share Dynamics:** Mentions of pricing power, customer retention/churn, or competitive differentiation.
 - **Management Tone & Q&A Dynamics:** Shifts in executive confidence, evasive answers during the Q&A, or divergence between the prepared remarks and analyst scrutiny.
 
 ## 4. Format and Constraints
-- **Format:** You must output the extracted data strictly as a valid Markdown document. You **MUST** use exactly these H2 headers: `## Report Metadata`, `## Core Value Drivers`, `## Capital Allocation`, `## Asymmetrical Risks & Headwinds`, `## Moat & Competitive Dynamics`, and `## Management Tone & Q&A Dynamics`.
+- **Format:** You must output the extracted data strictly as a valid Markdown document. You **MUST** use exactly these H2 headers: `## Report Metadata`, `## Core Value Drivers`, `## Growth and Margins Guidance`, `## Capital Allocation`, `## Asymmetrical Risks & Headwinds`, `## Pricing Power & Market Share Dynamics`, and `## Management Tone & Q&A Dynamics`.
 - **Zero Hallucination:** If a specific metric, risk, or guidance figure is not explicitly mentioned in the transcript, you must state "Not mentioned." Do not infer, guess, or calculate missing numbers.
 - **Exact Sourcing:** For the `## Asymmetrical Risks & Headwinds` and `## Management Tone & Q&A Dynamics` sections, you must include a short, exact quote from the transcript that justifies your qualitative assessment.
 * **Citations:** Every fact MUST have a citation.

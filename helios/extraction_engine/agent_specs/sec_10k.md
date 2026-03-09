@@ -26,3 +26,4 @@
 - **No Mathematics:** Do NOT perform any mathematical operations. If financial numbers are given in quarters, do not add them up.
 - **No Conversational Filler:** Output only the raw parseable JSON string. Do not use markdown code blocks (```json) and do not introduce the response.
 - **Currency Information:** If the report contains some other currency other than the primary one, mentioned also in section `report_metadata`, then you MUST ALWAYS specify it near the number or information related to such currency.
+- **The Column Inversion Rule:** You must explicitly map each financial value to its explicitly stated Year/Quarter. Do not assume left-to-right chronological order, as SEC filings frequently invert their date columns.
