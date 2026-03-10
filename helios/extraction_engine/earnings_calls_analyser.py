@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 
 from helios.config import GEMINI, EDGAR, OutputDir
+from helios.utils.commons import current_quarter
 from helios.utils.deep_research_analyser import DeepResearchAnalyser
 
 
@@ -16,7 +17,7 @@ class EarningsCallAnalyser(DeepResearchAnalyser):
         return GEMINI.earnings_call_analysis_model
 
     def _build_output_path(self) -> str:
-        year, quarter = self._current_quarter()
+        year, quarter = current_quarter()
         years_back = EDGAR.years_back_earnings_calls
         starting_year = int(year) - years_back
 

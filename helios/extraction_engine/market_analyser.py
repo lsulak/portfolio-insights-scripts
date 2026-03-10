@@ -3,6 +3,7 @@
 import os
 
 from helios.config import GEMINI, OutputDir
+from helios.utils.commons import current_quarter
 from helios.utils.deep_research_analyser import DeepResearchAnalyser
 
 
@@ -15,7 +16,7 @@ class MarketAnalyser(DeepResearchAnalyser):
         return GEMINI.market_analysis_model
 
     def _build_output_path(self) -> str:
-        year, quarter = self._current_quarter()
+        year, quarter = current_quarter()
         return os.path.join(self._ticker_output_dir(OutputDir.MARKET_ANALYSIS), f"report_during_{year}-Q{quarter}.md")
 
     def _build_agent_spec(self) -> str:

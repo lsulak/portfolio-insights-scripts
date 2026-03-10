@@ -59,11 +59,6 @@ class BaseAnalyser(ABC):
     # Shared helpers
     # ------------------------------------------------------------------
 
-    @staticmethod
-    def _current_quarter() -> tuple[str, int]:
-        """Return ``(year_str, quarter_number)`` for the current date."""
-        return current_quarter()
-
     def _ticker_dir(self) -> str:
         """Return ``<output_base_dir>/<ticker>``."""
         return os.path.join(self.output_base_dir, self.ticker)

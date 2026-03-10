@@ -17,11 +17,13 @@ overview, financial strength, business quality, growth, cycles, a pre-mortem,
 and the HELIOS Committee Verdict with an allocation decision.
 """
 
+import json
 import logging
 import os
 
 from helios.config import GEMINI, REASONING_AGENT_SPECS_DIR, OutputDir
-from helios.utils.commons import format_dossier_section
+from helios.synthesis_engine.dcf_calculator import DCFResults
+from helios.utils.commons import current_quarter, format_dossier_section
 from helios.utils.dossier_analyser import DossierAnalyser
 
 logger = logging.getLogger(__name__)
@@ -46,10 +48,38 @@ class FinalReportCompiler(DossierAnalyser):
         return GEMINI.final_report_temperature
 
     def _build_output_path(self) -> str:
-        year, quarter = self._current_quarter()
+        year, quarter = current_quarter()
         filename = f"report_{year}-Q{quarter}.md"
         return os.path.join(self._ticker_dir(), OutputDir.FINAL_REPORT, filename)
+    
+    def _read_dcf_results(self) -> DCFResults:
+        year, quarter = current_quarter()
+        filename = f"dcf_results_{year}-Q{quarter}.json"
+        full_path = os.path.join(self._ticker_dir(), OutputDir.STOCK_VALUATION, filename)
 
+        if os.path.exists(full_path):
+            with open(full_path, "r") as f:
+                dcf_results_data = json.load(f)
+                logger.info("Successfully read DCF results from '%s': %s", full_path, dcf_results_data)
+                return DCFResults(**dcf_results_data)
+        else:
+            raise Exception(
+                f"DCF results file not found at '{full_path}'. "
+                f"Ensure the Stock Valuation Engine has run and produced the expected output."
+            )
+        
+    def _format_dcf_results_section(self, dcf_results: DCFResults) -> str:
+        return f"""
+        {"=" * 60} PYTHON_DCF_RESULTS
+        - **Intrinsic Value Per Share:** ${dcf_results.intrinsic_value_per_share}
+        - **Current Stock Price:** ${dcf_results.current_stock_price}
+        - **Margin of Safety:** {dcf_results.margin_of_safety_percent}%
+        - **Calculated Firm Value:** ${dcf_results.calculated_firm_value}
+        - **Calculated Equity Value:** ${dcf_results.calculated_equity_value}
+        - **Growth Dependency Ratio (Terminal Value %):** {dcf_results.growth_dependency_ratio * 100}%
+        - **Integrity Haircut Applied:** {dcf_results.integrity_haircut_applied}
+        """
+    
     def _compile_dossier(self) -> str:
         sections = [
             format_dossier_section(
@@ -76,7 +106,14 @@ class FinalReportCompiler(DossierAnalyser):
                 self._collect_files(OutputDir.EXTERNAL_REALITY_CHECK, "*.md"),
             ),
         ]
+
+        dcf_results = self._read_dcf_results()
+        python_dcf_payload = self._format_dcf_results_section(dcf_results)
+        sections.append(python_dcf_payload)
+
         dossier = "\n\n".join(s for s in sections if s)
+        logger.debug("Compiled dossier content:\n%s", dossier)
+
         if not dossier:
             raise FileNotFoundError(
                 f"No source documents found for {self.ticker}. "

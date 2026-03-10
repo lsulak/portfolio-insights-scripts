@@ -11,7 +11,7 @@ import os
 
 from helios.config import GEMINI, REASONING_AGENT_SPECS_DIR, OutputDir
 from helios.utils.deep_research_analyser import DeepResearchAnalyser
-from helios.utils.commons import format_dossier_section, read_dir_files
+from helios.utils.commons import current_quarter, format_dossier_section, read_dir_files
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class ExternalRealityChecker(DeepResearchAnalyser):
         return GEMINI.external_reality_check_model
 
     def _build_output_path(self) -> str:
-        year, quarter = self._current_quarter()
+        year, quarter = current_quarter()
         return os.path.join(
             self._ticker_output_dir(OutputDir.EXTERNAL_REALITY_CHECK), f"report_during_{year}-Q{quarter}.md"
         )

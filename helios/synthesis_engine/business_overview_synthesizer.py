@@ -21,7 +21,7 @@ from pathlib import Path
 from helios.config import GEMINI, SYNTHESIS_AGENT_SPECS_DIR, OutputDir
 from helios.extraction_engine.edgar.domain import EdgarFormType
 from helios.utils.deep_research_analyser import DeepResearchAnalyser
-from helios.utils.commons import format_dossier_section, read_dir_files
+from helios.utils.commons import current_quarter, format_dossier_section, read_dir_files
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class BusinessOverviewSynthesizer(DeepResearchAnalyser):
         return GEMINI.business_overview_model
 
     def _build_output_path(self) -> str:
-        year, quarter = self._current_quarter()
+        year, quarter = current_quarter()
         filename = f"overview_{year}-Q{quarter}.md"
         return os.path.join(self._ticker_output_dir(OutputDir.BUSINESS_OVERVIEW), filename)
 
@@ -68,10 +68,6 @@ class BusinessOverviewSynthesizer(DeepResearchAnalyser):
             format_dossier_section(
                 "QUANTITATIVE BASELINE PAYLOAD (YAML)",
                 read_dir_files(os.path.join(ticker_dir, OutputDir.QUANTITATIVE_BASELINE), "*.yaml"),
-            ),
-            format_dossier_section(
-                "NARRATIVE VALIDATION PAYLOAD",
-                read_dir_files(os.path.join(ticker_dir, OutputDir.NARRATIVE_VALIDATION), "*.md"),
             ),
             format_dossier_section(
                 "SECTOR ANALYSIS PAYLOAD",

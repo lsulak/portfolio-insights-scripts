@@ -14,7 +14,7 @@ import logging
 import os
 
 from helios.config import GEMINI, SYNTHESIS_AGENT_SPECS_DIR, OutputDir
-from helios.utils.commons import format_dossier_section
+from helios.utils.commons import current_quarter, format_dossier_section
 from helios.utils.dossier_analyser import DossierAnalyser
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class QuantitativeBaselineCompiler(DossierAnalyser):
         return GEMINI.quantitative_baseline_temperature
 
     def _build_output_path(self) -> str:
-        year, quarter = self._current_quarter()
+        year, quarter = current_quarter()
         filename = f"ledger_{year}-Q{quarter}.yaml"
         return os.path.join(self._ticker_dir(), OutputDir.QUANTITATIVE_BASELINE, filename)
 

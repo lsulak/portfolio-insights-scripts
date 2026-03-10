@@ -20,18 +20,24 @@ TODOs
 """
 
 import asyncio
+from fileinput import filename
+import glob
+import json
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+import re
 import sys
 
 from dotenv import load_dotenv
+
+from helios.synthesis_engine.dcf_calculator import DCFParameters, calculate_damodaran_dcf, extract_dcf_inputs
 
 load_dotenv()  # Must be called before helios imports that read env vars
 
 from google import genai
 
-from helios.config import GEMINI
+from helios.config import GEMINI, OutputDir
 from helios.extraction_engine.earnings_calls_analyser import EarningsCallAnalyser
 from helios.extraction_engine.edgar_analyser import EdgarExtractionPipeline
 from helios.extraction_engine.market_analyser import MarketAnalyser
@@ -107,6 +113,16 @@ async def main(args) -> int:
         BusinessOverviewSynthesizer(**common, force_resummarize=args.force_resummarize_all),
     ):
         return 1
+
+    base_dir_for_dcf = os.path.join(data_dir, args.ticker)
+    search_pattern = os.path.join(base_dir_for_dcf, OutputDir.STOCK_VALUATION, "valuation_*.md")
+    complete_valuation_file = glob.glob(search_pattern)
+    if not complete_valuation_file or len(complete_valuation_file) > 1:
+        logger.error(f"No completed valuation markdown found for {args.ticker} in {search_pattern}. Cannot run DCF calculation.")
+        return 1
+
+    dcf_inputs = extract_dcf_inputs(complete_valuation_file)
+    calculate_damodaran_dcf(base_dir_for_dcf, dcf_inputs)
 
     # ── Layer 4: External Reality Check ──────────────────────────────
     if not await _run_layer(
