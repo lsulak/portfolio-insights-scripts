@@ -27,13 +27,12 @@ import sys
 
 from dotenv import load_dotenv
 
-from helios.synthesis_engine.dcf_calculator import DCFCalculator
-
 load_dotenv()  # Must be called before helios imports that read env vars
 
 from google import genai
 
 from helios.config import GEMINI
+from helios.synthesis_engine.dcf_calculator import DCFCalculator
 from helios.extraction_engine.earnings_calls_analyser import EarningsCallAnalyser
 from helios.extraction_engine.edgar_analyser import EdgarExtractionPipeline
 from helios.extraction_engine.market_analyser import MarketAnalyser
@@ -111,10 +110,14 @@ async def main(args) -> int:
         return 1
 
     # ── Layer 3.5: Deterministic DCF (post-processes valuation output) ──
-    DCFCalculator(
-        ticker_dir=os.path.join(data_dir, args.ticker),
-        force_recalculate=args.force_resummarize_all,
-    ).run()
+    try:
+        DCFCalculator(
+            ticker_dir=os.path.join(data_dir, args.ticker),
+            force_recalculate=args.force_resummarize_all,
+        ).run()
+    except Exception as e:
+        logger.error("DCF calculation failed — aborting pipeline: %s: %s", type(e).__name__, e)
+        return 1
 
     # ── Layer 4: External Reality Check ──────────────────────────────
     if not await _run_layer(

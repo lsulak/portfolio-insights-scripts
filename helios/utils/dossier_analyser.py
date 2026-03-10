@@ -78,7 +78,7 @@ class DossierAnalyser(BaseAnalyser):
         for form_type in types_to_collect:
             form_dir = os.path.join(base, form_type)
             if not os.path.isdir(form_dir):
-                raise Exception(f"Expected Edgar summarized directory not found: {form_dir}.")
+                raise FileNotFoundError(f"Expected Edgar summarized directory not found: {form_dir}.")
 
             files = sorted(Path(form_dir).glob("*.json"), reverse=True)
             limit = (max_per_type or {}).get(form_type)
@@ -91,7 +91,7 @@ class DossierAnalyser(BaseAnalyser):
                     label += " (latest only)"
                 content = fp.read_text(encoding="utf-8")
                 if len(content) == 0:
-                    raise Exception(f"Empty content in {label}.")
+                    raise ValueError(f"Empty content in {label}.")
                 docs.append((label, content))
 
         return docs

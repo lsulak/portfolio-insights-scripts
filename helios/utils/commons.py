@@ -70,13 +70,13 @@ def read_dir_files(directory: str, pattern: str) -> list[tuple[str, str]]:
         Exception: If the directory does not exist or any matched file is empty.
     """
     if not os.path.isdir(directory):
-        raise Exception(f"Directory not found: {directory}")
+        raise FileNotFoundError(f"Directory not found: {directory}")
 
     files = sorted(Path(directory).glob(pattern), reverse=True)
     results: list[tuple[str, str]] = []
     for fp in files:
         if fp.stat().st_size == 0:
-            raise Exception(f"Empty content in: {fp}.")
+            raise ValueError(f"Empty content in: {fp}.")
         results.append((fp.name, fp.read_text(encoding="utf-8")))
     return results
 

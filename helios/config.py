@@ -88,6 +88,7 @@ class EdgarConfig:
 
     # --- Python: rate limiting (engineering constant) ---
     api_call_delay_seconds: int = 5
+    edgar_filings_per_type_limit: int = 50  # Cap on number of filings to fetch per type, to prevent overload
 
 
 # ==========================================

@@ -9,6 +9,7 @@ from typing import List, Optional
 
 from sec_edgar_downloader import Downloader
 
+from helios.config import EDGAR
 from helios.extraction_engine.edgar.domain import EdgarFormType, LocalEdgarDocument
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ class EdgarFetcher:
     """
 
     def __init__(self, company_name: str, email_address: str, download_dir: str):
-        self.downloader = Downloader(company_name, email_address, download_dir)
+        self.downloader = Downloader(company_name, email_address, download_dir, limit=EDGAR.edgar_filings_per_type_limit)
         self.download_dir = download_dir
 
     def _get_report_cutoff_date(self, years_back: int) -> str:
