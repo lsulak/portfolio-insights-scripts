@@ -16,6 +16,7 @@ So Deep Search with Internet only: ETE, SE, ME, BE, ERC - so 5x (cost maybe $8 p
 but never more than 3x Deep Research in parallel (using Paid Tier 1 in Google AI Studio).
 
 TODOs
+* Use Batch API - 50% costs down?
 * Later: Upload some results to Google Drive? Maybe at least those that the final layer will work with? So that I can read it and rerun from Gemini Web UI
 """
 

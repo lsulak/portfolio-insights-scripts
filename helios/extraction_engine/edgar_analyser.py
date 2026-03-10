@@ -8,9 +8,11 @@ Coordinates the building blocks in the edgar/ sub-package:
 
 import asyncio
 from dataclasses import dataclass
+from glob import glob
 import logging
 import os
 
+from pathlib import Path
 from google import genai
 
 from helios.config import GEMINI, EDGAR, OutputDir
@@ -62,6 +64,14 @@ class EdgarExtractionPipeline:
 
         self._ensure_directories()
 
+        # write me function to check if the self._dir_raw directory is empty - if no, skip
+        if not self.force_resummarize and not self._is_dir_empty(self._dir_raw):
+            logger.info(
+                f"Raw EDGAR data directory {self._dir_raw} is not empty or force_resummarize is False. "
+                f"Skipping fetching and summarization."
+            )
+            return EdgarExtractionResult(total=0, successful=0, failed=0)
+
         fetcher = EdgarFetcher(company_name=EDGAR.company_name, email_address=EDGAR.email, download_dir=self._dir_raw)
         summarizer = EdgarDocumentSummarizer(
             client=self.client,
@@ -89,6 +99,12 @@ class EdgarExtractionPipeline:
     # Private
     # ------------------------------------------------------------------
 
+    def _is_dir_empty(self, directory: str) -> bool:
+        """Check if a directory is empty."""
+        dir_size = sum(file.stat().st_size for file in Path(directory).rglob('*'))
+
+        return dir_size == 0
+    
     def _ensure_directories(self) -> None:
         os.makedirs(self._dir_raw, exist_ok=True)
         for form_type in EDGAR_FORM_TO_AGENT_SPEC:

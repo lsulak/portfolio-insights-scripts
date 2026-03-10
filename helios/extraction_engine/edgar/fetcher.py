@@ -23,7 +23,7 @@ class EdgarFetcher:
     """
 
     def __init__(self, company_name: str, email_address: str, download_dir: str):
-        self.downloader = Downloader(company_name, email_address, download_dir, limit=EDGAR.edgar_filings_per_type_limit)
+        self.downloader = Downloader(company_name, email_address, download_dir)
         self.download_dir = download_dir
 
     def _get_report_cutoff_date(self, years_back: int) -> str:
@@ -45,7 +45,9 @@ class EdgarFetcher:
         cutoff_date = self._get_report_cutoff_date(years_back)
         logger.info(f"[Edgar] Downloading Form '{form_type}' for {ticker} filed after {cutoff_date}...")
 
-        await asyncio.to_thread(self.downloader.get, form_type, ticker, after=cutoff_date)
+        await asyncio.to_thread(
+            self.downloader.get, form_type, ticker, after=cutoff_date, limit=EDGAR.edgar_filings_per_type_limit
+        )
 
         # Standard sub-path used by sec-edgar-downloader (cannot be changed)
         search_pattern = os.path.join(self.download_dir, "sec-edgar-filings", ticker, form_type, "*", "*.txt")
