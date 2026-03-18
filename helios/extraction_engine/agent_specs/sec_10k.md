@@ -8,9 +8,13 @@
 - First, map the document structure to locate the exact required chapters. 
 - Second, extract the data strictly according to the Context definitions below. Do NOT extract data outside of these explicitly requested parameters.
 
+<dynamic_instructions>
+{{ business_and_risk }}
+</dynamic_instructions>
+
 ## 3. Context (Extraction Details)
 - **Report Metadata:** Exact submission date, the exact SEC form type (e.g., 10-K, 10-K/A), the company ticker symbol, and primary currency.
-{{ business_and_risk }}
+- **Dynamic Context:** Fulfill any additional extraction parameters injected in the `<dynamic_instructions>` block above.
 - **Financial Statements:** Extract the FULL, line-by-line quantitative tables for the following statements. Include geographic or product-segment breakdowns if explicitly reported:
     - Income Statement (including also diluted shares outstanding if available)
     - Balance Sheet (including also net debt if available)
