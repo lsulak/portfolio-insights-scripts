@@ -12,7 +12,7 @@
 - **Value Chain & Pricing Power:** Map the leverage in the system. Who holds the pricing power—suppliers, manufacturers, or end-distributors?
 - **Competitive Landscape & Rivalry (numbers):** Identify the top 5 direct competitors and then provide:
   - **Common Quantitative Data:** For these 5 companies as well as for company `{{ TICKER }}`, gather the current market capitalization, current stock price, and current relative valuation metrics **P/S, P/E, and P/FCF** (do NOT calculate it by yourself), along with the average of the last 3 years of revenue growth and operating margins.
-  - **The Sales-to-Capital Extraction:** You MUST extract or calculate the industry average **Sales-to-Capital Ratio**. If no published aggregate exists, calculate the average ratio for the top 5 competitors including the company `{{ TICKER }}` (and flag it) as follows: `Sales / [Invested Capital]` averaged over the last 5 years, where `Invested Capital` is as follows: `[Book Value of Debt] + [Book Value of Equity] - [Non-operating Assets Cash including Cash and cash equivalents, marketable securities, and assets of discontinued operations]`.
+  - **The Sales-to-Capital Extraction:** You MUST extract the industry average Sales-to-Capital Ratio (e.g., from Aswath Damodaran's published datasets or generic industry reports). Do NOT attempt to calculate this historically for the competitors yourself.
 - **Sector Asymmetrical Risks:** Identify existential substitution threats (e.g. asymmetrical technological shift) or regulatory choke points.
 
 ## 4. Format and Constraints
