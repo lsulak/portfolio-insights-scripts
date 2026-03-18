@@ -35,12 +35,12 @@ class DCFParameters:
 
     base_year_revenue: float
     base_year_ebit: float
-    tax_rate: float
+    effective_tax_rate: float
     stage_1_revenue_cagr: float
     target_operating_margin_year_5: float
     sales_to_capital_ratio: float
     total_debt: float
-    cash_and_equivalents: float
+    cash_and_cash_equivalents_and_short_term_investments: float
     shares_outstanding: float
     market_cap: float
     stock_price: float
@@ -167,7 +167,7 @@ class DCFCalculator:
             current_rev *= 1 + params.stage_1_revenue_cagr
             current_margin += margin_step
 
-            nopat = current_rev * current_margin * (1 - params.tax_rate)
+            nopat = current_rev * current_margin * (1 - params.effective_tax_rate)
             reinvestment = (current_rev - prev_rev) / params.sales_to_capital_ratio
             fcff = nopat - reinvestment
 
@@ -184,7 +184,7 @@ class DCFCalculator:
             current_rev *= 1 + current_growth
 
             # Margin holds at the Year 5 structural target
-            nopat = current_rev * params.target_operating_margin_year_5 * (1 - params.tax_rate)
+            nopat = current_rev * params.target_operating_margin_year_5 * (1 - params.effective_tax_rate)
 
             if year == _TOTAL_YEARS:
                 # Terminal fade: Reinvestment Rate = g / ROIC

@@ -14,25 +14,25 @@
 ## 3. Execution Protocol
 - **Search Strategy:** Query `"[Company Name] business model evolution"`, `"[Company Name] strategic pivots history"`, and `"[Company Name] unit economics breakdown"`.
 
-### Section 1: The Origin & The Machine
+**The Origin & The Machine**
 - **The Foundation:** Using the 10-K `business` section as a basis, concisely explain the company's core mission and foundational business model.
 - **The Origin:** Explain how the company started and how it evolved over time, include founder and management changes.
 - **The Value Proposition:** What exact problem does this business solve? Deconstruct the physical or digital value chain from raw input to final customer delivery. Who are suppliers and who are customers?
 
-### Section 2: The Revenue Engine & Segments
+**The Revenue Engine & Segments**
 - Map how the product mix and segment margins have mutated over time using the `QBC`. Is the business economics predictable?
 
-### Section 3: Cost Structure & Unit Economics
+**Cost Structure & Unit Economics**
 - Define the primary drivers of COGS and OpEx. Does the system possess economies of scale? What are the acute operational shifts happening right now?
 
-### Section 4: A Decade of Execution (The Milestone Ledger)
+**A Decade of Execution (The Milestone Ledger)**
 - Create a bulleted, chronological timeline of at least the 10 most critical structural events in the last decade (e.g. M&A, divestitures, leadership overhauls, structural reorganizations). Check the `Material Events` and the Internet.
 
-### Section 5: Operational Fragility & Single Points of Failure
+**Operational Fragility & Single Points of Failure**
 - Cross-reference the 10-K `risk_factors` with the physical value chain to highlight critical vulnerabilities (e.g., reliance on a single fab, extreme geographic concentration). Do NOT define the competitive "moat" here.
 
 ## 4. Format and Constraints
-- **Format:** Output strictly as a valid Markdown document. You **MUST** use exactly these H2 headers: `## The Origin & The Machine`, `## The Revenue Engine & Segments`, `## Cost Structure & Unit Economics`, `## A Decade of Execution`, and `## Operational Fragility & Single Points of Failure`.
+- **Format:** Output strictly as a valid Markdown document. You **MUST** use exactly these headers: `## The Origin & The Machine`, `## The Revenue Engine & Segments`, `## Cost Structure & Unit Economics`, `## A Decade of Execution (The Milestone Ledger)`, and `## Operational Fragility & Single Points of Failure`.
 - **Currency Information:** If the report contains a currency other than the primary reporting currency, you MUST ALWAYS specify the currency ticker immediately adjacent to the number or information related to such currency.
 - **Constraint (No Math):** Do NOT perform any mathematical operations. If financial numbers or segment margins are given in quarters, do not add them up or average them to create an annual figure. Output the numbers exactly as spoken or written in the state payloads.
 - **Constraint (Zero Hallucination):** If a historical milestone, market share, or specific supply chain leverage cannot be explicitly verified in the provided payloads OR via your Deep Research results, state "Not explicitly verifiable." Do not guess.

@@ -10,24 +10,24 @@
 ## 3. Execution Protocol
 **Temporal Weighting Rule:** Prioritize structural shifts (Years -10 to -4) and acute Narrative Dissonance (Years -3 to Present).
 
-### Section 1: Narrative vs. Reality (The Lie Detector)
+**Narrative vs. Reality (The Lie Detector)**
 - Compare the internal corporate narrative against the Q&A dynamics. Flag explicit internal contradictions or shifting metrics ("KPI Drift").
 
-### Section 2: Micro vs. Macro Alignment (The Excuse Detector)
+**Micro vs. Macro Alignment (The Excuse Detector)**
 - Cross-reference management's stated headwinds against the `SE` report. If management blames macro conditions, but the Sector report indicates rivals are taking market share, flag this as severe Narrative Dissonance.
 
-### Section 3: Capital Allocation & Insider Alignment
+**Capital Allocation & Insider Alignment**
 - Synthesize the `CEO Incentive Metrics` (DEF 14A), the `Transactions Array` (Form 4), and CapEx plans. 
 - Map the trend of insider buying vs. selling. 
 - Evaluate historical R&D and M&A efficiency.
 
-### Section 4: Emerging Asymmetrical Risks
+**Emerging Asymmetrical Risks**
 - Aggregate evolving `Risk Factors`, material events, and analyst-probed headwinds into a deduplicated risk profile. 
 
-### Section 5: Pricing Power & Capital Intensity Trajectory
+**Pricing Power & Capital Intensity Trajectory**
 - Based on pricing actions and capital intensity shifts mentioned across all texts, evaluate if the company's competitive positioning is expanding or deteriorating compared to its historical baseline. Do NOT attempt to formally grade the "moat".
 
 ## 4. Format and Constraints
-- **Format:** Output strictly as a valid Markdown document. You **MUST** use exactly these H2 headers: `## Narrative vs. Reality`, `## Micro vs. Macro Alignment`, `## Capital Allocation & Insider Alignment`, `## Emerging Asymmetrical Risks`, and `## Pricing Power & Capital Trajectory`.
+- **Format:** Output strictly as a valid Markdown document. You **MUST** use exactly these headers: `## Narrative vs. Reality (The Lie Detector)`, `## Micro vs. Macro Alignment (The Excuse Detector)`, `## Capital Allocation & Insider Alignment`, `## Emerging Asymmetrical Risks`, and `## Pricing Power & Capital Intensity Trajectory`.
 - **Debugging Mode:** Every synthesized claim MUST include a citation of the specific input file.
 - **Zero Hallucination:** Do not invent controversies or infer malice if the data does not explicitly support it. State findings objectively.
