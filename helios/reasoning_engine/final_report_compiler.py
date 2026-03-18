@@ -17,6 +17,7 @@ overview, financial strength, business quality, growth, cycles, a pre-mortem,
 and the HELIOS Committee Verdict with an allocation decision.
 """
 
+import datetime
 import json
 import logging
 import os
@@ -70,6 +71,10 @@ class FinalReportCompiler(DossierAnalyser):
         logger.info("Loaded DCF results from '%s': %s", full_path, data)
         return DCFResults(**data)
 
+    def _build_agent_spec(self) -> str:
+        five_years_from_now = (datetime.datetime.now() + datetime.timedelta(days=5*365)).strftime("%Y-%m-%d")
+        return self._render_agent_spec(self.AGENT_SPEC_FILE, TICKER=self.ticker, FUTURE_DATE_5Y=five_years_from_now)
+    
     def _compile_dossier(self) -> str:
         sections = [
             format_dossier_section(

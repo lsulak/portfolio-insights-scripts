@@ -44,6 +44,9 @@ class NarrativeValidator(DossierAnalyser):
         filename = f"report_{year}-Q{quarter}.md"
         return os.path.join(self._ticker_dir(), OutputDir.NARRATIVE_VALIDATION, filename)
 
+    def _build_agent_spec(self) -> str:
+        return self._render_agent_spec(self.AGENT_SPEC_FILE, TICKER=self.ticker)
+    
     def _compile_dossier(self) -> str:
         sections = [
             format_dossier_section("SECTOR ANALYSIS", self._collect_files(OutputDir.SECTOR_ANALYSIS, "*.md")),

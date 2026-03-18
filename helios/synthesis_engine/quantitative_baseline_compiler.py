@@ -42,6 +42,9 @@ class QuantitativeBaselineCompiler(DossierAnalyser):
         filename = f"ledger_{year}-Q{quarter}.yaml"
         return os.path.join(self._ticker_dir(), OutputDir.QUANTITATIVE_BASELINE, filename)
 
+    def _build_agent_spec(self) -> str:
+        return self._render_agent_spec(self.AGENT_SPEC_FILE, TICKER=self.ticker)
+    
     def _compile_dossier(self) -> str:
         sections = [
             format_dossier_section("EARNINGS CALL SYNTHESIS", self._collect_files(OutputDir.EARNINGS_CALLS, "*.md")),

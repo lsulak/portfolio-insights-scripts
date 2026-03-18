@@ -37,7 +37,7 @@ class DossierAnalyser(BaseAnalyser):
     AGENT_SPEC_FILE: str
 
     # ------------------------------------------------------------------
-    # Subclass hooks
+    # Abstract methods
     # ------------------------------------------------------------------
 
     @abstractmethod
@@ -47,6 +47,10 @@ class DossierAnalyser(BaseAnalyser):
     @abstractmethod
     def _compile_dossier(self) -> str:
         """Compile all upstream outputs into a single dossier string."""
+
+    @abstractmethod
+    def _build_agent_spec(self) -> str:
+        """Return the fully-rendered agent spec prompt."""
 
     # ------------------------------------------------------------------
     # Shared helpers
@@ -96,16 +100,8 @@ class DossierAnalyser(BaseAnalyser):
 
         return docs
 
-    def _build_agent_spec(self) -> str:
-        """Load and render the agent spec template with the ticker.
-
-        Default implementation uses ``AGENT_SPECS_DIR / AGENT_SPEC_FILE``.
-        Override if custom template variables are needed.
-        """
-        return self._render_agent_spec(self.AGENT_SPEC_FILE, TICKER=self.ticker)
-
     # ------------------------------------------------------------------
-    # Template method
+    # Final method
     # ------------------------------------------------------------------
 
     async def run(self) -> None:

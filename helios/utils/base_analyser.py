@@ -40,7 +40,7 @@ class BaseAnalyser(ABC):
         self.force_resummarize = force_resummarize
 
     # ------------------------------------------------------------------
-    # Subclass hooks
+    # Abstract methods
     # ------------------------------------------------------------------
 
     @abstractmethod
@@ -50,6 +50,10 @@ class BaseAnalyser(ABC):
     @abstractmethod
     def _build_output_path(self) -> str:
         """Return the full filesystem path for the output report."""
+
+    @abstractmethod
+    def _build_agent_spec(self) -> str:
+        """Return the fully-rendered agent spec prompt."""
 
     @abstractmethod
     async def run(self):

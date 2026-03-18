@@ -20,7 +20,7 @@
 - **Risk Factor Deltas (Item 1A):** Extract ONLY newly introduced risk factors or explicit material updates to existing risks. If the filing states "There have been no material changes," you must strictly output `null`.
 
 ## 4. Constraints
-- **Strict JSON Contract:** Strict JSON Contract: You must output the extracted data strictly as a minified, valid JSON object matching the exact schema below. Do not deviate from these keys:
+- **Strict JSON Contract:** You must output the extracted data strictly as a minified, valid JSON object matching the exact schema below. Do not deviate from these keys:
 
 {
   "report_metadata": {

@@ -47,7 +47,7 @@ Your final output must be strictly formatted Markdown followed by a strict JSON 
 Trace the narrative inputs to your quantitative parameter decisions.
 
 ## Relative Valuation
-Include a Markdown table comparing Current vs. Historical 10-Year Median vs. Peers. 
+Include a Markdown table comparing Current vs. Historical 10-Year Average vs. Peers. 
 Separately, outside of this Markdown table, report the ROIC records for the company as well.
 
 ## Reverse DCF Expectations
@@ -61,7 +61,7 @@ State the Implied CAGR vs. Historical CAGR.
   "dcf_parameters": {
     "base_year_revenue": 0.0,
     "base_year_ebit": 0.0,
-    "tax_rate": 0.21,
+    "tax_rate": 0.0,
     "stage_1_revenue_cagr": 0.0,
     "target_operating_margin_year_5": 0.0,
     "sales_to_capital_ratio": 0.0,

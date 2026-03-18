@@ -45,6 +45,9 @@ class StockValuationEngine(DossierAnalyser):
         filename = f"valuation_{year}-Q{quarter}.md"
         return os.path.join(self._ticker_dir(), OutputDir.STOCK_VALUATION, filename)
 
+    def _build_agent_spec(self) -> str:
+        return self._render_agent_spec(self.AGENT_SPEC_FILE, TICKER=self.ticker)
+    
     def _compile_dossier(self) -> str:
         sections = [
             format_dossier_section(
