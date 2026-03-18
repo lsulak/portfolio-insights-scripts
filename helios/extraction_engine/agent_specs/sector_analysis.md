@@ -10,9 +10,9 @@
 - **Target Identification & Region:** Explicitly state the Company Name, its Primary Industry, and the Geographic Region.
 - **The Capital Cycle & Credit Reality:** Are competitors aggressively expanding capacity or consolidating? **Credit Reality:** You MUST search for the current Credit Default Swap (CDS) spreads or the yield-to-maturity on the most recently issued corporate bonds for `{{ TICKER }}` and its top peer. Compare this against the Risk-Free Rate to identify systemic credit distress.
 - **Value Chain & Pricing Power:** Map the leverage in the system. Who holds the pricing power—suppliers, manufacturers, or end-distributors?
-- **Competitive Landscape & Rivalry (numbers):** 
-  - **Common Quantitative Data:** Identify the top 5 direct competitors. For these 5 companies as well as for company `{{ TICKER }}`, gather the current market capitalization, current stock price, and current relative valuation metrics **P/S, P/E, and P/FCF** (do NOT calculate it by yourself), along with the average of the last 3 years of revenue growth and operating margins.
-  - **The Sales-to-Capital Extraction:** You MUST extract or calculate the industry average **Sales-to-Capital Ratio**. If no published aggregate exists, calculate the average ratio for the top 5 competitors: `Sales / (Total Debt + Book Equity - Cash)` averaged over the last 5 years. Explicitly state this final ratio.
+- **Competitive Landscape & Rivalry (numbers):** Identify the top 5 direct competitors and then provide:
+  - **Common Quantitative Data:** For these 5 companies as well as for company `{{ TICKER }}`, gather the current market capitalization, current stock price, and current relative valuation metrics **P/S, P/E, and P/FCF** (do NOT calculate it by yourself), along with the average of the last 3 years of revenue growth and operating margins.
+  - **The Sales-to-Capital Extraction:** You MUST extract or calculate the industry average **Sales-to-Capital Ratio**. If no published aggregate exists, calculate the average ratio for the top 5 competitors including the company `{{ TICKER }}` (and flag it) as follows: `Sales / [Invested Capital]` averaged over the last 5 years, where `Invested Capital` is as follows: `[Book Value of Debt] + [Book Value of Equity] - [Non-operating Assets Cash including Cash and cash equivalents, marketable securities, and assets of discontinued operations]`.
 - **Sector Asymmetrical Risks:** Identify existential substitution threats (e.g. asymmetrical technological shift) or regulatory choke points.
 
 ## 4. Format and Constraints
