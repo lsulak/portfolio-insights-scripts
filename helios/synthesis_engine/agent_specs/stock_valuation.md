@@ -23,7 +23,7 @@ You are strictly forbidden from calculating the DCF yourself. Your job is to syn
 - **Stage 1 Target Margin (Year 5):** Determine the exact Operating Margin the company will hit by Year 5. Anchor on the `Quantitative Baseline Payload` 3-year trailing average. Apply a 200 bps penalty if the `Narrative Validation Payload` flags deteriorating pricing power.
 - **The Hyper-Growth Reinvestment Anchor (Sales-to-Capital):** 
   1. Extract the industry average `Sales-to-Capital` ratio from the `Sector Analysis Payload`.
-  2. Also, calculate the target company's historical Sales-to-Capital ratio from the `Quantitative Baseline Payload` (`Revenue / [Invested Capital]` where `[Invested Capital] = [Book Value of Debt] + [Book Value of Equity] - [Non-operating Assets Cash including Cash and cash equivalents, marketable securities, and assets of discontinued operations]`) based on the last 5 years, and calculate its average. Also, keep `Invested Capital` as it will be handy later.
+  2. Also, calculate the target company's historical Sales-to-Capital ratio from the `Quantitative Baseline Payload` (`Revenue / [Invested Capital]` where `[Invested Capital] = [Book Value of Debt] + [Book Value of Equity] - [Non-operating Assets Cash including Cash and cash equivalents, and marketable securities]`) based on the last 5 years, and calculate its average. Also, keep `Invested Capital` as it will be handy later.
   3. Pick the bigger of the two.
 - **Risk-Free Rate:** Extract from `Market Analysis Payload`.
 - **The Integrity Haircut:** If the `Narrative Validation Payload` reports management misalignment, output `0.10` in the final JSON `integrity_haircut_percent` field. Otherwise, output `0.0`.

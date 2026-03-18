@@ -62,7 +62,7 @@ SCHEMA_ADDITIONS_FIRST_10K_ONLY = """
     "business_summary": "",
     "risk_factors": []
   },
-""".strip('\n') # Keep trailing comma if needed, but watch JSON syntax
+""".strip('\n')
 
 # Map each form type to its Markdown spec filename
 _FORM_TO_SPEC_FILE = {
