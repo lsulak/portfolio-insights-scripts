@@ -23,16 +23,21 @@ You are strictly forbidden from calculating the DCF yourself. Your job is to syn
 - **Stage 1 Target Margin (Year 5):** Determine the exact Operating Margin the company will hit by Year 5. Anchor on the `Quantitative Baseline Payload` 3-year trailing average. Apply a 200 bps penalty if the `Narrative Validation Payload` flags deteriorating pricing power.
 - **The Hyper-Growth Reinvestment Anchor (Sales-to-Capital):** 
   1. Extract the 5-year smoothed industry average Sales-to-Capital ratio from the `Sector Analysis Payload`.
-  2. Also, calculate the target company's historical Sales-to-Capital ratio from the `Quantitative Baseline Payload` (`Revenue / Invested Capital` where `Invested Capital = [Book Value of Debt] + [Book Value of Equity] - [Non-operating Assets Cash including Cash and cash equivalents, marketable securities, and assets of discontinued operations]`) based on the last 5 years, keep `Invested Capital` as it will be handy later.
+  2. Also, calculate the target company's historical Sales-to-Capital ratio from the `Quantitative Baseline Payload` (`Revenue / [Invested Capital]` where `[Invested Capital] = [Book Value of Debt] + [Book Value of Equity] - [Non-operating Assets Cash including Cash and cash equivalents, marketable securities, and assets of discontinued operations]`) based on the last 5 years, keep `Invested Capital` as it will be handy later.
   3. Pick the bigger of the two.
 - **Risk-Free Rate:** Extract from `Market Analysis Payload`.
 - **The Integrity Haircut:** If the `Narrative Validation Payload` reports management misalignment, output `0.10` in the final JSON `integrity_haircut_percent` field. Otherwise, output `0.0`.
 
 ## 4. Calculation Logic & Constraints (Relative & Reverse Valuations)
 
-- **Relative Valuation:** In the `Sector Analysis Payload` under the header `## Competitive Landscape & Rivalry`, locate the market capitalization, stock price, relative metrics, growth rates and margins. Once done, compare the current multiples **P/S, P/E, P/B, P/FCF, and P/OCF** against the **10-year historical medians** (from `Quantitative Baseline Payload`) for the company. Then, also compare **P/S, P/E, and P/FCF**, revenue growth rates, and profit margins of the company against the top 5 rivals from `Sector Analysis Payload`. Also, calculate **Return on Invested Capital (ROIC):** calculate `NOPAT` for the company for the last 5 years and then: `ROIC = NOPAT / [Invested Capital]`, where `NOPAT = [Net Income] + [Net Interest Expense] * (1 - [Effective Tax Rate])`
+- **Relative Valuation:** 
+  - In the `Sector Analysis Payload` under the header `## Competitive Landscape & Rivalry`, locate the market capitalization, stock price, relative metrics, growth rates and margins for competitors and company `{{ TICKER }}`. 
+  - Once done, then using data in `Quantitative Baseline Payload`, compute and compare the current multiples **P/S, P/E, P/B, P/FCF, and P/OCF** against the **10-year historical medians** for the company. 
+  - Once done, then also compare **P/S, P/E, and P/FCF**, revenue growth rates, and profit margins of the company against the top 5 rivals from `Sector Analysis Payload`. 
+  - Then, calculate **Return on Invested Capital (ROIC)** for the company `{{ TICKER }}` for the last 5 years as follows: `ROIC = NOPAT / [Invested Capital]`, where `NOPAT = [Net Income] + [Net Interest Expense] * (1 - [Effective Tax Rate])` and `[Invested Capital]` was calculated in the previous section `The Parameter Synthesis Protocol`
 
 - **Reverse DCF Expectations:** "What FCF CAGR is the market currently pricing in for the next 5 years to justify the current Market Cap?" Compare this Market-Implied Growth against the 10-year historical CAGR and Forward Guidance. If the FCF is not appropriate to use (maybe it's distorted by historically unusually high CAPEX spend), then use OCF.
+
 - **Strict Missing Data Protocol (No Hallucination):** If any required data is not available from the upstream payloads—specifically if core DCF parameters resolve to empty/null, you are STRICTLY FORBIDDEN from guessing, estimating, or pulling historical numbers from your training weights. You MUST explicitly flag the exact missing parameters in your `Parameter Translation Log` and output `null` for those specific fields in the final JSON contract.
 
 ## 5. Output Format
@@ -42,12 +47,16 @@ Your final output must be strictly formatted Markdown followed by a strict JSON 
 Trace the narrative inputs to your quantitative parameter decisions.
 
 ## Relative Valuation
-Include a Markdown table comparing Current vs. Historical 10-Year Median vs. Peers.
+Include a Markdown table comparing Current vs. Historical 10-Year Median vs. Peers. 
+Separately, outside of this Markdown table, report the ROIC records for the company as well.
 
 ## Reverse DCF Expectations
 State the Implied CAGR vs. Historical CAGR.
 
 ## DCF Parameters Contract
+
+(Note that the values here are placeholders that must be substituted with real values.)
+
 {
   "dcf_parameters": {
     "base_year_revenue": 0.0,

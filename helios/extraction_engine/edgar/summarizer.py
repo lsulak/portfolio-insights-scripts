@@ -13,6 +13,7 @@ from helios.extraction_engine.edgar.cleaner import EdgarDocumentCleaner
 from helios.extraction_engine.edgar.domain import (
     AGENT_ADDITIONS_FIRST_10K_ONLY,
     EDGAR_FORMS_TO_CLEAN,
+    SCHEMA_ADDITIONS_FIRST_10K_ONLY,
     EdgarFormType,
     LocalEdgarDocument,
 )
@@ -115,12 +116,18 @@ class EdgarDocumentSummarizer:
     def _render_agent_spec(form_type: EdgarFormType, base_spec: Template, ticker: str, is_most_recent: bool) -> str:
         """Render the Jinja2 agent spec, injecting extra context for the latest 10-K."""
         if form_type == EdgarFormType.ANNUAL_REPORT:
-            addition = AGENT_ADDITIONS_FIRST_10K_ONLY if is_most_recent else ""
+            business_and_risk_addition = AGENT_ADDITIONS_FIRST_10K_ONLY if is_most_recent else ""
+            business_and_risk_schema = SCHEMA_ADDITIONS_FIRST_10K_ONLY if is_most_recent else ""
+
             if is_most_recent:
                 logger.info(
                     f"Using enhanced specs for most recent {form_type} filing of {ticker} with business and risk factor context."
                 )
-            return base_spec.render(business_and_risk=addition, ticker=ticker)
+            return base_spec.render(
+                business_and_risk=business_and_risk_addition, 
+                business_and_risk_schema=business_and_risk_schema, 
+                ticker=ticker
+            )
         return base_spec.render(ticker=ticker)
 
     @staticmethod

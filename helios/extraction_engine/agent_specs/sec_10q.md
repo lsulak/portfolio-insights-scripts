@@ -20,7 +20,45 @@
 - **Risk Factor Deltas (Item 1A):** Extract ONLY newly introduced risk factors or explicit material updates to existing risks. If the filing states "There have been no material changes," you must strictly output `null`.
 
 ## 4. Constraints
-- **Strict JSON Contract:** You must output the extracted data strictly as a minified, valid JSON object. Section names must be lowercase with underscores.
+- **Strict JSON Contract:** Strict JSON Contract: You must output the extracted data strictly as a minified, valid JSON object matching the exact schema below. Do not deviate from these keys:
+
+```
+{
+  "report_metadata": {
+    "submission_date": "",
+    "quarter_ended_date": "",
+    "form_type": "",
+    "ticker_symbol": "",
+    "primary_currency": ""
+  },
+  "financial_statements": {
+    "qtd": {
+      "income_statement": {},
+      "balance_sheet": {},
+      "cash_flow_statement": {}
+    },
+    "ytd": {
+      "income_statement": {},
+      "balance_sheet": {},
+      "cash_flow_statement": {}
+    }
+  },
+  "revenue_and_cost_structure": {
+    "revenue_streams": [],
+    "cogs_drivers": []
+  },
+  "research_and_development": {
+    "expenditures": 0.0,
+    "focus_areas": []
+  },
+  "mda_highlights": {
+    "margin_expansion_drivers": [],
+    "margin_contraction_drivers": []
+  },
+  "risk_factor_deltas": []
+}
+```
+
 - **Zero Hallucination:** If a requested data point or entire section is missing from the provided text, you must output `null` for that JSON key. Do not guess or infer.
 - **No Mathematics:** Do NOT perform any mathematical operations. If financial numbers are given in quarters, do not add them up.
 - **No Conversational Filler:** Output only the raw parseable JSON string. Do not use markdown code blocks (```json) and do not introduce the response.
