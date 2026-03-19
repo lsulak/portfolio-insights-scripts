@@ -25,4 +25,4 @@ Filter the macro noise and extract the systemic data that drives capital allocat
 - **Zero Hallucination:** If a specific metric cannot be confidently found for that country, state "Data not found." Do not calculate it yourself.
 - **Exact Data Sourcing:** For the `## DCF Core Inputs` and `## Market Cycle & Psychology` metrics, you MUST include the exact date of the reading and the source URL.
 - **Constraint:** Do not offer stock market predictions. Focus purely on presenting the factual state of the localized macro and credit environment.
-* **Citations:** Every fact MUST have a citation.
+- **Citations:** Every fact MUST have a citation.

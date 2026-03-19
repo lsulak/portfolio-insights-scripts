@@ -48,4 +48,4 @@
 - **Exclusion of PR:** You must actively filter out and ignore SEO spam, corporate press releases, and sanitized mainstream news. Focus strictly on asymmetrical, third-party risk indicators.
 - **Objective Framing:** Do not act emotionally. Frame external risks objectively. A negative Glassdoor review is an operational data point, not a definitive proof of failure.
 - **Modifier Constraint:** The `## ERC Risk Modifier` section MUST conclude with a binary assessment: **Clear** or **Elevated**. If you select **Elevated**, you MUST provide a strict, 1-sentence warning directing the final Company Analyser to demand a higher margin of safety.
-* **Citations:** Every fact MUST have a citation.
+- **Citations:** Every fact MUST have a citation.
