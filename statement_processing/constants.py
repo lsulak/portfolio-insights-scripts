@@ -9,7 +9,7 @@ import aiosql
 _CURR_DIR = os.path.abspath(os.path.dirname(__file__))
 
 _QUERIES_DIR = os.path.join(_CURR_DIR, "queries")
-DB_QUERIES = aiosql.from_path(_QUERIES_DIR, "sqlite3")
+DB_QUERIES = aiosql.from_path(_QUERIES_DIR, "sqlite3", mandatory_parameters=False)
 
 URL_NASDAQ_TICKETS = "https://raw.githubusercontent.com/rreichel3/US-Stock-Symbols/main/nasdaq/nasdaq_tickers.txt"
 URL_NYSE_TICKETS = "https://raw.githubusercontent.com/rreichel3/US-Stock-Symbols/main/nyse/nyse_tickers.txt"
@@ -67,7 +67,7 @@ class IBKRReportsProcessingConst:  # pylint: disable=too-few-public-methods
     IN_STAT_FILE_ENCODING = "utf-8-sig"
     IN_STAT_FILE_DELIMITER = ","
 
-    REGEX_PARSE_DIVIDEND_DESC = re.compile(r"[a-zA-Z ]*?([A-Z0-9]+)\(.+?\) Cash Dividend .+? ([0-9.]+?) per")
+    REGEX_PARSE_DIVIDEND_DESC = re.compile(r"[a-zA-Z ]*?([A-Z0-9.]+)\(.+?\) Cash Dividend .+? ([0-9.]+?) per")
 
     # This is only for the first pre-processing and pre-filtering data, not for outputting.
     MAP_SECTION_TO_DESIRED_COLUMNS = {
@@ -94,6 +94,12 @@ class IBKRReportsProcessingConst:  # pylint: disable=too-few-public-methods
         "Deposits & Withdrawals": {
             "Currency": str,
             "Settle Date": str,
+            "Description": str,
+            "Amount": float,
+        },
+        "Fees": {
+            "Currency": str,
+            "Date": str,
             "Description": str,
             "Amount": float,
         },

@@ -27,8 +27,8 @@ functionality might be implemented in the future though.
 
 import glob
 import io
-import logging.config
 import re
+import logging
 import sqlite3
 from collections import defaultdict
 from hashlib import md5
@@ -154,8 +154,6 @@ def preprocess_data(input_data: T_AGGREGATED_RAW_DATA) -> T_SEMI_PROCESSED_DATA:
             items=IBKRReportsProcessingConst.MAP_SECTION_TO_DESIRED_COLUMNS[section_name].keys()
         )
 
-        prefiltered_data.columns = prefiltered_data.columns.str.replace(" ", "")
-
         # Some reports can have missing columns. Maybe a user didn't export transaction
         # fees - maybe there were no such fees - but we accept such statements here.
         missing_cols = set(IBKRReportsProcessingConst.MAP_SECTION_TO_DESIRED_COLUMNS[section_name].keys()) - set(
@@ -175,6 +173,8 @@ def preprocess_data(input_data: T_AGGREGATED_RAW_DATA) -> T_SEMI_PROCESSED_DATA:
         prefiltered_data = prefiltered_data.astype(
             IBKRReportsProcessingConst.MAP_SECTION_TO_DESIRED_COLUMNS[section_name]
         )
+
+        prefiltered_data.columns = prefiltered_data.columns.str.replace(" ", "")
         prefiltered_data = create_id_for_each_row(prefiltered_data)
 
         # There might be multiple sections (=reports) with the same section name, but the data
@@ -276,6 +276,8 @@ def load_stock_transactions_to_db(
         sqlite_conn.execute("DROP TABLE tmp_table_stocks")
         return
 
+    transaction_fees = transaction_fees.dropna(subset=["Symbol"])
+
     transaction_fees = transaction_fees.apply(
         lambda x: replace_renamed_ticker_symbols(x, ticker_column="Symbol"), axis=1
     )
@@ -310,13 +312,13 @@ def load_dividends_to_db(
     def get_dividend_item(item):
         try:
             return re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, item.strip()).group(1)
-        except:
+        except Exception:
             logger.error(f"Item {item} seems to have unsupported data, Dividend Item couldn't be obtained")
 
     def get_dividend_ppu(item):
         try:
             return float(re.match(IBKRReportsProcessingConst.REGEX_PARSE_DIVIDEND_DESC, item.strip()).group(2))
-        except:
+        except Exception:
             logger.error(f"Item {item} seems to have unsupported data, Dividend PPU couldn't be obtained")
             return 0.0
 
@@ -386,7 +388,7 @@ def load_dividends_to_db(
     else:
         DB_QUERIES.insert_dividend_records_without_taxes(sqlite_conn)
 
-    duplicit_dividend_records_validation = DB_QUERIES.validate_duplicit_dividend_records(sqlite_conn)
+    duplicit_dividend_records_validation = list(DB_QUERIES.validate_duplicit_dividend_records(sqlite_conn))
     if duplicit_dividend_records_validation:
         raise Exception(
             f"There are duplicit dividend records for the same ticker and "
@@ -406,7 +408,7 @@ def drop_all_tmp_tables(sqlite_conn: sqlite3.Connection) -> None:
     """
     logger.info("Going to drop all temporary tables.")
 
-    tables_to_drop = DB_QUERIES.list_all_tmp_tables(sqlite_conn)
+    tables_to_drop = list(DB_QUERIES.list_all_tmp_tables(sqlite_conn))
     for table_to_drop in tables_to_drop:
         sqlite_conn.execute(f"DROP TABLE {table_to_drop[0]}")
 
@@ -426,11 +428,21 @@ def process(input_directory: str, output_db_location: str) -> None:
     with sqlite3.connect(output_db_location) as connection:
         try:
             load_deposits_and_withdrawals_to_db(connection, semi_processed_data["Deposits & Withdrawals"])
-            load_forex_transactions_to_db(connection, semi_processed_data["Trades"].query("AssetCategory == 'Forex'"))
-            load_special_fees_to_db(connection, semi_processed_data["Other Fees"])
+
+            trades_df = semi_processed_data["Trades"]
+            has_trades = "AssetCategory" in trades_df.columns
+            load_forex_transactions_to_db(
+                connection,
+                trades_df.query("AssetCategory == 'Forex'") if has_trades else pd.DataFrame(),
+            )
+            fees_df = pd.concat(
+                [semi_processed_data["Fees"], semi_processed_data["Other Fees"]],
+                ignore_index=True,
+            ).drop_duplicates()
+            load_special_fees_to_db(connection, fees_df)
             load_stock_transactions_to_db(
                 connection,
-                semi_processed_data["Trades"].query("AssetCategory == 'Stocks'"),
+                trades_df.query("AssetCategory == 'Stocks'") if has_trades else pd.DataFrame(),
                 semi_processed_data["Transaction Fees"],
             )
             load_dividends_to_db(connection, semi_processed_data["Dividends"], semi_processed_data["Withholding Tax"])
