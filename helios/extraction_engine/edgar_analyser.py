@@ -7,15 +7,14 @@ Coordinates the building blocks in the edgar/ sub-package:
 """
 
 import asyncio
-from dataclasses import dataclass
-from glob import glob
 import logging
 import os
 
 from pathlib import Path
+
 from google import genai
 
-from helios.config import GEMINI, EDGAR, OutputDir
+from helios.config import GEMINI, EDGAR, EXTRACTION_FORCE, OutputDir
 from helios.extraction_engine.edgar.cleaner import EdgarDocumentCleaner
 from helios.extraction_engine.edgar.domain import (
     EdgarFormType,
@@ -24,98 +23,106 @@ from helios.extraction_engine.edgar.domain import (
 )
 from helios.extraction_engine.edgar.fetcher import EdgarFetcher
 from helios.extraction_engine.edgar.summarizer import EdgarDocumentSummarizer
+from helios.pipeline.base import BaseAnalyser
+from helios.utils.gemini_file_manager import GeminiFileManager
+from helios.utils.gemini_model_invoker import GeminiSingleInvoker
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class EdgarExtractionResult:
-    """Outcome of an extraction pipeline run."""
+class EdgarExtractionPipeline(BaseAnalyser):
+    """Fetches, cleans, and summarizes Edgar filings for a given ticker.
 
-    total: int
-    successful: int
-    failed: int
+    Extends ``BaseAnalyser`` directly — it has its own multi-phase
+    workflow and does not use agent specs or the stateless-model template.
+    """
 
-    @property
-    def all_passed(self) -> bool:
-        return self.failed == 0
-
-
-class EdgarExtractionPipeline:
-    """Fetches, cleans, and summarizes Edgar filings for a given ticker."""
-
-    def __init__(self, client: genai.Client, output_base_dir: str, ticker: str, force_resummarize: bool = False):
-        self.client = client
-        self.ticker = ticker
-        self.force_resummarize = force_resummarize
+    def __init__(
+        self,
+        client: genai.Client,
+        file_manager: GeminiFileManager,
+        output_base_dir: str,
+        ticker: str,
+        force_recompute: bool = False,
+    ):
+        super().__init__(output_base_dir, ticker, force_recompute)
+        self._client = client
+        self._file_manager = file_manager
+        self.force_recompute = self.force_recompute or EXTRACTION_FORCE.edgar
 
         ticker_dir = os.path.join(output_base_dir, ticker)
         self._dir_raw = os.path.join(ticker_dir, OutputDir.EDGAR_RAW)
         self._dir_minified = os.path.join(ticker_dir, OutputDir.EDGAR_MINIFIED)
         self._dir_summarized = os.path.join(ticker_dir, OutputDir.EDGAR_SUMMARIZED)
 
+    def _build_output_path(self) -> str:
+        return self._dir_summarized
+
     # ------------------------------------------------------------------
     # Public
     # ------------------------------------------------------------------
 
-    async def run(self) -> EdgarExtractionResult:
+    async def run(self) -> None:
         """Execute the complete extraction pipeline."""
-        logger.info(f"🚀 Starting Edgar Extraction Pipeline for {self.ticker}")
+        logger.info(f"Starting Edgar Extraction Pipeline for {self.ticker}")
 
         self._ensure_directories()
 
-        # write me function to check if the self._dir_raw directory is empty - if no, skip
         if not self.force_resummarize and not self._is_dir_empty(self._dir_raw):
             logger.info(
                 f"Raw EDGAR data directory {self._dir_raw} is not empty or force_resummarize is False. "
                 f"Skipping fetching and summarization."
             )
-            return EdgarExtractionResult(total=0, successful=0, failed=0)
+            return
 
         fetcher = EdgarFetcher(company_name=EDGAR.company_name, email_address=EDGAR.email, download_dir=self._dir_raw)
         summarizer = EdgarDocumentSummarizer(
-            client=self.client,
-            summarized_dir=self._dir_summarized,
+            file_manager=self._file_manager,
+            gemini_model_invoker=GeminiSingleInvoker(client=self._client, model_name=GEMINI.edgar_extractor_model),
             cleaner=EdgarDocumentCleaner(target_dir=self._dir_minified),
+            summarized_dir=self._dir_summarized,
         )
+
+        docs_to_summarize = await self._fetch_all_filings(fetcher)
+
+        if not docs_to_summarize:
+            logger.warning(f"No documents to process for {self.ticker}")
+            return
+
         semaphore = asyncio.Semaphore(GEMINI.max_parallel_calls)
 
-        tasks = await self._build_tasks(fetcher, summarizer, semaphore)
+        async def _bounded_summarize(doc, spec_template, is_most_recent):
+            async with semaphore:
+                await summarizer.summarize(doc, spec_template, is_most_recent, self.force_resummarize)
 
-        if not tasks:
-            logger.warning(f"No documents to process for {self.ticker}")
-            return EdgarExtractionResult(total=0, successful=0, failed=0)
+        await asyncio.gather(*(
+            _bounded_summarize(doc, spec_template, is_most_recent)
+            for doc, spec_template, is_most_recent in docs_to_summarize
+        ))
 
-        logger.info(f"🚀 Processing {len(tasks)} documents concurrently...")
-        results = await asyncio.gather(*tasks)
-
-        successful = sum(1 for r in results if r is True)
-        failed = len(results) - successful
-
-        logger.info(f"🎯 Pipeline complete: ✅ {successful} / ❌ {failed}")
-        return EdgarExtractionResult(total=len(results), successful=successful, failed=failed)
+        logger.info(f"Edgar pipeline complete: {len(docs_to_summarize)} documents processed.")
 
     # ------------------------------------------------------------------
     # Private
     # ------------------------------------------------------------------
 
     def _is_dir_empty(self, directory: str) -> bool:
-        """Check if a directory is empty."""
-        dir_size = sum(file.stat().st_size for file in Path(directory).rglob('*'))
+        """Check if a directory contains any files (recursively)."""
+        return not any(p.is_file() for p in Path(directory).rglob("*"))
 
-        return dir_size == 0
-    
     def _ensure_directories(self) -> None:
         os.makedirs(self._dir_raw, exist_ok=True)
         for form_type in EDGAR_FORM_TO_AGENT_SPEC:
             os.makedirs(os.path.join(self._dir_minified, form_type), exist_ok=True)
             os.makedirs(os.path.join(self._dir_summarized, form_type), exist_ok=True)
 
-    async def _build_tasks(
-        self, fetcher: EdgarFetcher, summarizer: EdgarDocumentSummarizer, semaphore: asyncio.Semaphore
-    ) -> list:
-        """Fetch filings for every configured form type and return summarization tasks."""
-        tasks = []
+    async def _fetch_all_filings(self, fetcher: EdgarFetcher) -> list[tuple]:
+        """Fetch filings for every configured form type.
+
+        Returns:
+            List of ``(doc, agent_spec_template, is_most_recent)`` tuples.
+        """
+        results = []
 
         for form_type, agent_spec_template in EDGAR_FORM_TO_AGENT_SPEC.items():
             await asyncio.sleep(EDGAR.api_call_delay_seconds)
@@ -131,15 +138,14 @@ class EdgarExtractionPipeline:
                 continue
 
             is_annual = form_type == EdgarFormType.ANNUAL_REPORT
-            latest_year = max(d.submission_year for d in docs) if is_annual else -1
+            if is_annual:
+                latest_doc = max(docs, key=lambda d: (d.submission_year, d.submission_order_for_the_year))
+            else:
+                latest_doc = None
 
             for doc in docs:
-                is_most_recent = is_annual and doc.submission_year == latest_year
+                is_most_recent = is_annual and doc is latest_doc
+                results.append((doc, agent_spec_template, is_most_recent))
 
-                async def _bounded_summarize(d=doc, spec_template=agent_spec_template, recent=is_most_recent):
-                    async with semaphore:
-                        return await summarizer.summarize(d, spec_template, recent, self.force_resummarize)
-
-                tasks.append(_bounded_summarize())
-
-        return tasks
+        logger.info(f"Fetched {len(results)} documents for summarization.")
+        return results

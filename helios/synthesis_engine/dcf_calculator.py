@@ -9,7 +9,6 @@ Post-processes the StockValuationEngine markdown output:
 This module is purely deterministic — no AI model calls.
 """
 
-import glob
 import json
 import logging
 import os
@@ -17,7 +16,8 @@ import re
 from dataclasses import asdict, dataclass
 
 from helios.config import OutputDir
-from helios.utils.commons import current_quarter
+from helios.pipeline.base import BaseAnalyser
+from helios.utils.helpers import current_quarter
 
 logger = logging.getLogger(__name__)
 
@@ -61,56 +61,44 @@ class DCFResults:
     integrity_haircut_applied: bool
 
 
-class DCFCalculator:
+class DCFCalculator(BaseAnalyser):
+    """Purely deterministic DCF calculator — no AI, no model calls.
 
-    def __init__(self, ticker_dir: str, force_recalculate: bool = False) -> None:
-        self.ticker_dir = ticker_dir
-        self.force_recalculate = force_recalculate
+    Extends ``BaseAnalyser`` for ticker-scoped directory helpers and caching.
+    """
 
     # ------------------------------------------------------------------
-    # Public API
+    # BaseAnalyser contract
     # ------------------------------------------------------------------
 
-    def run(self) -> DCFResults:
+    def _build_output_path(self) -> str:
+        year, quarter = current_quarter()
+        return os.path.join(self._ticker_dir(), OutputDir.STOCK_VALUATION, f"dcf_results_{year}-Q{quarter}.json")
+
+    def run(self) -> None:
         """Execute the full DCF pipeline: locate → extract → calculate → persist."""
         output_path = self._build_output_path()
 
-        if not self.force_recalculate and os.path.exists(output_path):
-            logger.info("[DCFCalculator] Output already exists at %s. Skipping.", output_path)
-            with open(output_path, "r", encoding="utf-8") as f:
-                return DCFResults(**json.load(f))
+        if self._is_cached(output_path):
+            return
 
         valuation_file = self._find_valuation_file()
         params = self._extract_inputs(valuation_file)
         results = self._calculate(params)
-        self._persist(output_path, results)
-        return results
+        self._persist_json(output_path, results)
 
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
 
-    def _build_output_path(self) -> str:
-        year, quarter = current_quarter()
-        return os.path.join(
-            self.ticker_dir, OutputDir.STOCK_VALUATION, f"dcf_results_{year}-Q{quarter}.json"
-        )
-
     def _find_valuation_file(self) -> str:
-        """Locate the single valuation markdown produced by StockValuationEngine."""
-        pattern = os.path.join(self.ticker_dir, OutputDir.STOCK_VALUATION, "valuation_*.md")
-        matches = glob.glob(pattern)
+        """Locate the valuation markdown for the current quarter."""
+        year, quarter = current_quarter()
+        expected = os.path.join(self._ticker_dir(), OutputDir.STOCK_VALUATION, f"valuation_{year}-Q{quarter}.md")
 
-        if not matches:
-            raise FileNotFoundError(
-                f"No valuation markdown found matching {pattern}. "
-                "Run StockValuationEngine first."
-            )
-        if len(matches) > 1:
-            raise ValueError(
-                f"Expected exactly one valuation file, found {len(matches)}: {matches}"
-            )
-        return matches[0]
+        if not os.path.exists(expected):
+            raise FileNotFoundError(f"No valuation markdown found at {expected}. Run StockValuationEngine first.")
+        return expected
 
     @staticmethod
     def _extract_inputs(filepath: str) -> DCFParameters:
@@ -118,19 +106,25 @@ class DCFCalculator:
         with open(filepath, "r", encoding="utf-8") as f:
             markdown = f.read()
 
-        match = re.search(r"```json\s*(\{.*?\})\s*```", markdown, re.DOTALL)
-        if not match:
+        # Find all fenced JSON blocks; pick the one containing "dcf_parameters"
+        all_blocks = re.findall(r"```json\s*(\{.*?\})\s*```", markdown, re.DOTALL)
+        if not all_blocks:
             raise ValueError(
                 f"No JSON block found in {filepath}. "
                 "The StockValuationEngine agent spec must produce an embedded ```json block."
             )
 
-        raw = json.loads(match.group(1))
+        dcf_block = next((b for b in all_blocks if "dcf_parameters" in b), all_blocks[-1])
+        raw = json.loads(dcf_block)
         dcf_params: dict = raw.get("dcf_parameters", raw)
 
         # Sanitize sales_to_capital_ratio to prevent division by zero
         s2c = dcf_params.get("sales_to_capital_ratio", _DEFAULT_SALES_TO_CAPITAL)
         dcf_params["sales_to_capital_ratio"] = s2c if s2c and s2c > 0 else _DEFAULT_SALES_TO_CAPITAL
+
+        # Strip any extra keys the LLM might have added
+        valid_fields = {f.name for f in DCFParameters.__dataclass_fields__.values()}
+        dcf_params = {k: v for k, v in dcf_params.items() if k in valid_fields}
 
         return DCFParameters(**dcf_params)
 
@@ -139,29 +133,36 @@ class DCFCalculator:
         """Execute a deterministic 10-Year DCF based on Damodaran's First Principles.
 
         Two-stage model:
-            Stage 1 (years 1–5):  high-growth at ``stage_1_revenue_cagr``,
-                                  margin converges linearly to target.
-            Stage 2 (years 6–10): growth fades linearly to risk-free rate,
-                                  margin held at year-5 target.
+            Stage 1 (years 1–5):  high-growth, margin converges to target.
+            Stage 2 (years 6–10): growth fades to risk-free rate, margin held.
             Terminal value:       perpetual growth at risk-free rate.
         """
-        logger.info("[DCFCalculator] Starting calculation with: %s", params)
+        logger.info("Starting DCF calculation with: %s", params)
 
         base_margin = (
             params.base_year_ebit / params.base_year_revenue
             if params.base_year_revenue > 0
             else params.target_operating_margin_year_5
         )
+        logger.info("Base margin: %.4f", base_margin)
+
+        pvs, rev, fcff = DCFCalculator._stage_1(params, base_margin)
+        stage2_pvs, rev, fcff = DCFCalculator._stage_2(params, rev)
+        pvs.extend(stage2_pvs)
+
+        pv_terminal = DCFCalculator._terminal_value(params, fcff)
+
+        return DCFCalculator._assemble_results(params, pvs, pv_terminal)
+
+    @staticmethod
+    def _stage_1(params: DCFParameters, base_margin: float) -> tuple[list[float], float, float]:
+        """Stage 1 (years 1–5): high-growth, sales-to-capital driven reinvestment."""
         margin_step = (params.target_operating_margin_year_5 - base_margin) / _STAGE_1_YEARS
-
-        logger.info("[DCFCalculator] Base margin: %.4f, margin step: %.4f", base_margin, margin_step)
-
         present_values: list[float] = []
         current_rev = params.base_year_revenue
         current_margin = base_margin
         fcff = 0.0
 
-        # ── Stage 1: Years 1–5 (high-growth, sales-to-capital driven) ──
         for year in range(1, _STAGE_1_YEARS + 1):
             prev_rev = current_rev
             current_rev *= 1 + params.stage_1_revenue_cagr
@@ -170,57 +171,69 @@ class DCFCalculator:
             nopat = current_rev * current_margin * (1 - params.effective_tax_rate)
             reinvestment = (current_rev - prev_rev) / params.sales_to_capital_ratio
             fcff = nopat - reinvestment
+            present_values.append(fcff / ((1 + _COST_OF_CAPITAL) ** year))
 
-            pv = fcff / ((1 + _COST_OF_CAPITAL) ** year)
-            present_values.append(pv)
+        return present_values, current_rev, fcff
 
-        # ── Stage 2: Years 6–10 (macro-gravity fade to risk-free rate) ──
+    @staticmethod
+    def _stage_2(params: DCFParameters, current_rev: float) -> tuple[list[float], float, float]:
+        """Stage 2 (years 6–10): growth fades linearly to risk-free rate."""
         growth_fade_step = (params.stage_1_revenue_cagr - params.risk_free_rate) / _STAGE_2_YEARS
         current_growth = params.stage_1_revenue_cagr
+        present_values: list[float] = []
+        fcff = 0.0
 
         for year in range(_STAGE_1_YEARS + 1, _TOTAL_YEARS + 1):
             current_growth -= growth_fade_step
             prev_rev = current_rev
             current_rev *= 1 + current_growth
 
-            # Margin holds at the Year 5 structural target
             nopat = current_rev * params.target_operating_margin_year_5 * (1 - params.effective_tax_rate)
 
             if year == _TOTAL_YEARS:
-                # Terminal fade: Reinvestment Rate = g / ROIC
                 reinvestment = nopat * (params.risk_free_rate / _TERMINAL_ROIC)
             else:
-                # Transition years maintain sales-to-capital mechanics
                 reinvestment = (current_rev - prev_rev) / params.sales_to_capital_ratio
 
             fcff = nopat - reinvestment
-            pv = fcff / ((1 + _COST_OF_CAPITAL) ** year)
-            present_values.append(pv)
+            present_values.append(fcff / ((1 + _COST_OF_CAPITAL) ** year))
 
-        # ── Terminal Value ──
-        terminal_value = (fcff * (1 + params.risk_free_rate)) / (_COST_OF_CAPITAL - params.risk_free_rate)
-        pv_terminal = terminal_value / ((1 + _COST_OF_CAPITAL) ** _TOTAL_YEARS)
+        return present_values, current_rev, fcff
 
+    @staticmethod
+    def _terminal_value(params: DCFParameters, final_fcff: float) -> float:
+        """Compute the present value of the terminal (perpetuity) value."""
+        spread = _COST_OF_CAPITAL - params.risk_free_rate
+        if spread <= 0:
+            logger.warning(
+                "Risk-free rate (%.4f) >= cost of capital (%.4f). "
+                "Terminal value cannot be computed — setting to 0.",
+                params.risk_free_rate,
+                _COST_OF_CAPITAL,
+            )
+            terminal_value = 0.0
+        else:
+            terminal_value = (final_fcff * (1 + params.risk_free_rate)) / spread
+
+        return terminal_value / ((1 + _COST_OF_CAPITAL) ** _TOTAL_YEARS)
+
+    @staticmethod
+    def _assemble_results(params: DCFParameters, present_values: list[float], pv_terminal: float) -> DCFResults:
+        """Convert raw present values into the final DCFResults."""
         firm_value = sum(present_values) + pv_terminal
-        equity_value = firm_value - params.total_debt + params.cash_and_equivalents
-
-        logger.info(
-            "[DCFCalculator] Firm value: %.2f, equity value (pre-haircut): %.2f",
-            firm_value,
-            equity_value,
-        )
-
-        # ── Integrity Haircut (asymmetrical risk modifier) ──
+        equity_value = firm_value - params.total_debt + params.cash_and_cash_equivalents_and_short_term_investments
         equity_value_adjusted = equity_value * (1 - params.integrity_haircut_percent)
 
-        intrinsic_per_share = (
-            equity_value_adjusted / params.shares_outstanding
-            if params.shares_outstanding > 0
-            else 0.0
+        logger.info(
+            "Firm value: %.2f, equity value (post-haircut): %.2f",
+            firm_value,
+            equity_value_adjusted,
         )
 
-        # ── Margin of Safety ──
-        # Positive = undervalued (discount), Negative = overvalued (premium)
+        intrinsic_per_share = (
+            equity_value_adjusted / params.shares_outstanding if params.shares_outstanding > 0 else 0.0
+        )
+
         margin_of_safety = 0.0
         if params.stock_price > 0 and intrinsic_per_share > 0:
             margin_of_safety = ((intrinsic_per_share - params.stock_price) / params.stock_price) * 100
@@ -228,7 +241,7 @@ class DCFCalculator:
         growth_dependency = pv_terminal / firm_value if firm_value > 0 else 0.0
 
         logger.info(
-            "[DCFCalculator] Intrinsic/share: %.2f, MoS: %.2f%%, GDR: %.4f",
+            "Intrinsic/share values for DCF: %.2f, MoS: %.2f%%, GDR: %.4f",
             intrinsic_per_share,
             margin_of_safety,
             growth_dependency,
@@ -245,9 +258,9 @@ class DCFCalculator:
         )
 
     @staticmethod
-    def _persist(output_path: str, results: DCFResults) -> None:
+    def _persist_json(output_path: str, results: DCFResults) -> None:
         """Write DCF results to JSON."""
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(asdict(results), f, indent=4)
-        logger.info("[DCFCalculator] Results saved to '%s'", output_path)
+        logger.info("DCF results saved to '%s'", output_path)

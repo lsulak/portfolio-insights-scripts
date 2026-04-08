@@ -35,7 +35,7 @@ def _env(key: str) -> str:
 # GEMINI AI PLATFORM
 # ==========================================
 @dataclass(frozen=True)
-class GeminiConfig:
+class GeminiAPIConfig:
     """All Gemini API settings — from .env plus Python engineering constants."""
 
     # --- .env (required) ---
@@ -67,6 +67,10 @@ class GeminiConfig:
     final_report_temperature: float = 0.0
 
     max_chars_per_document: int = 900_000
+
+    # --- Python: Batch API settings ---
+    batch_poll_interval_seconds: int = 30
+    batch_max_wait_seconds: int = 3600  # 1 hour (Google targets 24h, typically much faster)
 
 
 # ==========================================
@@ -119,6 +123,24 @@ class OutputDir:
 
 
 # ==========================================
+# EXTRACTION ENGINE — per-engine force flags
+# ==========================================
+@dataclass(frozen=True)
+class ExtractionForceConfig:
+    """Per-engine force-resummarize overrides — from .env.
+
+    These let you selectively re-run individual extraction engines
+    without forcing the entire pipeline.  Set the corresponding
+    env var to ``true`` to activate.
+    """
+
+    edgar: bool = False
+    earnings: bool = False
+    market: bool = False
+    sector: bool = False
+
+
+# ==========================================
 # PATH CONSTANTS
 # ==========================================
 EXTRACTION_AGENT_SPECS_DIR = Path(__file__).resolve().parent / "extraction_engine" / "agent_specs"
@@ -135,7 +157,7 @@ DEFAULT_TICKER = os.getenv("TESTING_TICKER", "GOOGL")
 # ==========================================
 # MODULE-LEVEL SINGLETONS (loaded at import time)
 # ==========================================
-GEMINI = GeminiConfig(
+GEMINI = GeminiAPIConfig(
     api_key=_env("GEMINI_API_KEY"),
     max_parallel_calls=int(_env("GEMINI_MAX_PARALLEL_CALLS")),
     edgar_extractor_model=_env("EDGAR_EXTRACTOR_MODEL"),
@@ -159,4 +181,11 @@ EDGAR = EdgarConfig(
     years_back_def14a=int(_env("YEARS_BACK_DEF14A")),
     years_back_form4=int(_env("YEARS_BACK_FORM4")),
     years_back_earnings_calls=int(_env("YEARS_BACK_EARNINGS_CALLS")),
+)
+
+EXTRACTION_FORCE = ExtractionForceConfig(
+    edgar=os.getenv("FORCE_RESUMMARIZE_EDGAR", "").lower() == "true",
+    earnings=os.getenv("FORCE_RESUMMARIZE_EARNINGS", "").lower() == "true",
+    market=os.getenv("FORCE_RESUMMARIZE_MARKET", "").lower() == "true",
+    sector=os.getenv("FORCE_RESUMMARIZE_SECTOR", "").lower() == "true",
 )

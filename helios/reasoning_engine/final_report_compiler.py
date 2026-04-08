@@ -9,7 +9,7 @@ Consumes outputs from seven prior pipeline stages:
     6. Business Overview        (Markdown — executive primer on the business)
     7. External Reality Check   (Markdown — scuttlebutt & short-seller claims)
 
-and feeds them as a single compiled dossier to a Gemini model with the
+and feeds them as a single compiled document to a stateless model call with the
 ``final_report.md`` agent spec.
 
 The result is a comprehensive Markdown investment report covering company
@@ -23,15 +23,15 @@ import logging
 import os
 from dataclasses import asdict
 
-from helios.config import GEMINI, REASONING_AGENT_SPECS_DIR, OutputDir
+from helios.config import GEMINI, OutputDir
 from helios.synthesis_engine.dcf_calculator import DCFResults
-from helios.utils.commons import current_quarter, format_dossier_section
-from helios.utils.dossier_analyser import DossierAnalyser
+from helios.pipeline.stateless_model import StatelessModelAnalyser
+from helios.utils.helpers import current_quarter, format_section
 
 logger = logging.getLogger(__name__)
 
 
-class FinalReportCompiler(DossierAnalyser):
+class FinalReportCompiler(StatelessModelAnalyser):
     """Produces the capstone HELIOS investment report for a ticker.
 
     Gathers quantitative baseline, narrative validation, sector analysis,
@@ -41,7 +41,6 @@ class FinalReportCompiler(DossierAnalyser):
     """
 
     AGENT_SPEC_FILE = "final_report.md"
-    AGENT_SPECS_DIR = REASONING_AGENT_SPECS_DIR
 
     def _get_model(self) -> str:
         return GEMINI.final_report_model
@@ -72,48 +71,40 @@ class FinalReportCompiler(DossierAnalyser):
         return DCFResults(**data)
 
     def _build_agent_spec(self) -> str:
-        five_years_from_now = (datetime.datetime.now() + datetime.timedelta(days=5*365)).strftime("%Y-%m-%d")
-        return self._render_agent_spec(self.AGENT_SPEC_FILE, TICKER=self.ticker, FUTURE_DATE_5Y=five_years_from_now)
-    
-    def _compile_dossier(self) -> str:
+        now = datetime.datetime.now()
+        try:
+            five_years_from_now = now.replace(year=now.year + 5).strftime("%Y-%m-%d")
+        except ValueError:
+            # Feb 29 → Feb 28 in a non-leap year
+            five_years_from_now = now.replace(year=now.year + 5, day=28).strftime("%Y-%m-%d")
+        return self.spec_renderer.render(self.AGENT_SPEC_FILE, TICKER=self.ticker, FUTURE_DATE_5Y=five_years_from_now)
+
+    def _compile_sources(self) -> str:
         sections = [
-            format_dossier_section(
+            format_section(
                 "QBC: QUANTITATIVE BASELINE PAYLOAD (YAML)",
                 self._collect_files(OutputDir.QUANTITATIVE_BASELINE, "*.yaml"),
             ),
-            format_dossier_section(
+            format_section(
                 "NV: NARRATIVE VALIDATION PAYLOAD", self._collect_files(OutputDir.NARRATIVE_VALIDATION, "*.md")
             ),
-            format_dossier_section(
-                "SE: SECTOR ANALYSIS PAYLOAD", self._collect_files(OutputDir.SECTOR_ANALYSIS, "*.md")
-            ),
-            format_dossier_section(
-                "ME: MARKET ANALYSIS PAYLOAD", self._collect_files(OutputDir.MARKET_ANALYSIS, "*.md")
-            ),
-            format_dossier_section(
-                "VE: VALUATION ENGINE PAYLOAD", self._collect_files(OutputDir.STOCK_VALUATION, "*.md")
-            ),
-            format_dossier_section(
-                "BE: BUSINESS OVERVIEW PAYLOAD", self._collect_files(OutputDir.BUSINESS_OVERVIEW, "*.md")
-            ),
-            format_dossier_section(
+            format_section("SE: SECTOR ANALYSIS PAYLOAD", self._collect_files(OutputDir.SECTOR_ANALYSIS, "*.md")),
+            format_section("ME: MARKET ANALYSIS PAYLOAD", self._collect_files(OutputDir.MARKET_ANALYSIS, "*.md")),
+            format_section("VE: VALUATION ENGINE PAYLOAD", self._collect_files(OutputDir.STOCK_VALUATION, "*.md")),
+            format_section("BE: BUSINESS OVERVIEW PAYLOAD", self._collect_files(OutputDir.BUSINESS_OVERVIEW, "*.md")),
+            format_section(
                 "ERC: EXTERNAL REALITY CHECK PAYLOAD",
                 self._collect_files(OutputDir.EXTERNAL_REALITY_CHECK, "*.md"),
             ),
         ]
 
-        dossier = "\n\n".join(s for s in sections if s)
-        if not dossier:
-            raise FileNotFoundError(
-                f"No source documents found for {self.ticker}. "
-                "Run the extraction, synthesis, and reasoning engines first."
-            )
+        compiled = self._join_sections(sections)
 
         # Append deterministic DCF results (auto-formats from dataclass fields)
         dcf_results = self._read_dcf_results()
         dcf_text = "\n".join(f"  {key}: {value}" for key, value in asdict(dcf_results).items())
-        dcf_section = format_dossier_section("PYTHON_DCF_RESULTS", [("dcf_calculation_output", dcf_text)])
-        dossier = f"{dossier}\n\n{dcf_section}"
+        dcf_section = format_section("PYTHON_DCF_RESULTS", [("dcf_calculation_output", dcf_text)])
+        compiled = f"{compiled}\n\n{dcf_section}"
 
-        logger.debug("Compiled dossier content:\n%s", dossier)
-        return dossier
+        logger.debug("Compiled source content:\n%s", compiled)
+        return compiled

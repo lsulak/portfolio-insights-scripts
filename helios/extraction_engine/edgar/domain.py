@@ -11,7 +11,7 @@ from typing import Optional
 from jinja2 import Template
 
 from helios.config import EXTRACTION_AGENT_SPECS_DIR, EDGAR
-from helios.utils.commons import load_agent_spec
+from helios.utils.agent_spec import AgentSpecRenderer
 
 
 # ==========================================
@@ -62,7 +62,7 @@ SCHEMA_ADDITIONS_FIRST_10K_ONLY = """
     "business_summary": "",
     "risk_factors": []
   },
-""".strip('\n')
+""".strip("\n")
 
 # Map each form type to its Markdown spec filename
 _FORM_TO_SPEC_FILE = {
@@ -77,7 +77,7 @@ _FORM_TO_SPEC_FILE = {
 def _load_all_agent_specs() -> dict[EdgarFormType, Template]:
     """Load all Edgar agent specs from Markdown files into Jinja2 templates."""
     return {
-        form_type: load_agent_spec(EXTRACTION_AGENT_SPECS_DIR / filename)
+        form_type: AgentSpecRenderer.load_template(EXTRACTION_AGENT_SPECS_DIR / filename)
         for form_type, filename in _FORM_TO_SPEC_FILE.items()
     }
 

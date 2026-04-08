@@ -1,26 +1,25 @@
-"""External Reality Checker — Deep Research Agent for company analysis
-beyond official company filings - suppliers, customers, controversies, etc.
+"""External Reality Checker — managed agent for company analysis
+beyond official company filings — suppliers, customers, controversies, etc.
 
 Uses Business Overview and Narrative Validation reports as context so the
-Deep Research agent can cross-reference its internet findings against the
-company's own filings.
+agent can cross-reference its internet findings against the company's own
+filings.
 """
 
 import logging
 import os
 
-from helios.config import GEMINI, REASONING_AGENT_SPECS_DIR, OutputDir
-from helios.utils.deep_research_analyser import DeepResearchAnalyser
-from helios.utils.commons import current_quarter, format_dossier_section, read_dir_files
+from helios.config import GEMINI, OutputDir
+from helios.pipeline.managed_agent import ManagedAgentAnalyser
+from helios.utils.helpers import current_quarter, format_section
 
 logger = logging.getLogger(__name__)
 
 
-class ExternalRealityChecker(DeepResearchAnalyser):
-    """External Reality checker via Gemini Deep Research Agent."""
+class ExternalRealityChecker(ManagedAgentAnalyser):
+    """External Reality checker via managed AI agent."""
 
-    AGENT_SPEC_FILENAME = "external_reality_check.md"
-    AGENT_SPECS_DIR = REASONING_AGENT_SPECS_DIR
+    AGENT_SPEC_FILE = "external_reality_check.md"
 
     def _get_model(self) -> str:
         return GEMINI.external_reality_check_model
@@ -31,27 +30,16 @@ class ExternalRealityChecker(DeepResearchAnalyser):
             self._ticker_output_dir(OutputDir.EXTERNAL_REALITY_CHECK), f"report_during_{year}-Q{quarter}.md"
         )
 
-    def _build_agent_spec(self) -> str:
-        return self._render_agent_spec(self.AGENT_SPEC_FILENAME, TICKER=self.ticker)
-
     def _build_context(self) -> str:
         """Load Business Overview and Narrative Validation reports as context."""
-        ticker_dir = os.path.join(self.output_base_dir, self.ticker)
-
         sections = [
-            format_dossier_section(
-                "BUSINESS OVERVIEW", read_dir_files(os.path.join(ticker_dir, OutputDir.BUSINESS_OVERVIEW), "*.md")
-            ),
-            format_dossier_section(
-                "NARRATIVE VALIDATION",
-                read_dir_files(os.path.join(ticker_dir, OutputDir.NARRATIVE_VALIDATION), "*.md"),
-            ),
+            format_section("BE: BUSINESS OVERVIEW", self._collect_files(OutputDir.BUSINESS_OVERVIEW, "*.md")),
+            format_section("NV: NARRATIVE VALIDATION", self._collect_files(OutputDir.NARRATIVE_VALIDATION, "*.md")),
         ]
 
-        dossier = "\n\n".join(s for s in sections if s)
-        if not dossier:
-            logger.warning("[ExternalRealityChecker] No BE/NV context found — running without upstream context.")
-            return ""
+        context = "\n\n".join(s for s in sections if s)
+        if not context:
+            raise Exception("No Business Overview/Narrative Validation context found. Cannot run External Reality Checker.")
 
-        logger.info(f"[ExternalRealityChecker] Loaded BE + NV context ({len(dossier):,} chars).")
-        return dossier
+        logger.info(f"Loaded Business Overview + Narrative Validation context ({len(context):,} chars).")
+        return context

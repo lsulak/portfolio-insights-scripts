@@ -1,16 +1,20 @@
-"""Sector analyser — Deep Research Agent for sector-level analysis."""
+"""Sector analyser — managed agent for sector-level analysis."""
 
 import os
 
-from helios.config import GEMINI, OutputDir
-from helios.utils.commons import current_quarter
-from helios.utils.deep_research_analyser import DeepResearchAnalyser
+from helios.config import GEMINI, EXTRACTION_FORCE, OutputDir
+from helios.pipeline.managed_agent import ManagedAgentAnalyser
+from helios.utils.helpers import current_quarter
 
 
-class SectorAnalyser(DeepResearchAnalyser):
-    """Sector analysis via Gemini Deep Research Agent."""
+class SectorAnalyser(ManagedAgentAnalyser):
+    """Sector analysis via managed AI agent."""
 
-    AGENT_SPEC_FILENAME = "sector_analysis.md"
+    AGENT_SPEC_FILE = "sector_analysis.md"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.force_recompute = self.force_recompute or EXTRACTION_FORCE.sector
 
     def _get_model(self) -> str:
         return GEMINI.sector_analysis_model
@@ -18,6 +22,3 @@ class SectorAnalyser(DeepResearchAnalyser):
     def _build_output_path(self) -> str:
         year, quarter = current_quarter()
         return os.path.join(self._ticker_output_dir(OutputDir.SECTOR_ANALYSIS), f"report_during_{year}-Q{quarter}.md")
-
-    def _build_agent_spec(self) -> str:
-        return self._render_agent_spec(self.AGENT_SPEC_FILENAME, TICKER=self.ticker)

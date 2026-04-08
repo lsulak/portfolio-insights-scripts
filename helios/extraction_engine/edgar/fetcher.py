@@ -49,41 +49,46 @@ class EdgarFetcher:
             self.downloader.get, form_type, ticker, after=cutoff_date, limit=EDGAR.edgar_filings_per_type_limit
         )
 
-        # Standard sub-path used by sec-edgar-downloader (cannot be changed)
-        search_pattern = os.path.join(self.download_dir, "sec-edgar-filings", ticker, form_type, "*", "*.txt")
-        downloaded_files = glob.glob(search_pattern)
-
+        downloaded_files = self._discover_downloaded_files(ticker, form_type)
         if not downloaded_files:
             logger.warning(f"[Edgar] No {form_type} found for {ticker}.")
             return None
 
-        processed_docs = []
-        for curr_file in downloaded_files:
-            dir_of_curr_file = os.path.basename(os.path.dirname(curr_file))
-            _, two_digits_submission_year, submission_order_for_the_year = dir_of_curr_file.split("-")
+        return [self._parse_filing(path, ticker, form_type) for path in downloaded_files]
 
-            # Parse 2-digit year correctly (handles years after 2068 rollover)
-            parsed_year = datetime.strptime(str(two_digits_submission_year), "%y").year
-            current_year = datetime.now().year
-            if parsed_year < (current_year - 50):
-                four_digit_submission_year = parsed_year + 100
-            else:
-                four_digit_submission_year = parsed_year
+    def _discover_downloaded_files(self, ticker: str, form_type: EdgarFormType) -> list[str]:
+        """Find all text files downloaded by sec-edgar-downloader for a given form type."""
+        search_pattern = os.path.join(self.download_dir, "sec-edgar-filings", ticker, form_type, "*", "*.txt")
+        return glob.glob(search_pattern)
 
-            logger.debug(
-                f"[Edgar] Downloaded file for {ticker}, {form_type}, "
-                f"submission year: {four_digit_submission_year}, order: {submission_order_for_the_year}"
-            )
+    @staticmethod
+    def _parse_filing(file_path: str, ticker: str, form_type: EdgarFormType) -> LocalEdgarDocument:
+        """Parse a downloaded filing path into a ``LocalEdgarDocument``."""
+        dir_name = os.path.basename(os.path.dirname(file_path))
+        _, two_digit_year, submission_order = dir_name.split("-")
 
-            curr_extraction = LocalEdgarDocument(
-                ticker=ticker,
-                submission_year=four_digit_submission_year,
-                submission_order_for_the_year=int(submission_order_for_the_year),
-                form_type=form_type,
-                file_path_raw=curr_file,
-                file_path_ai_ready=None,
-                mime_type="text/plain",  # Edgar primary submissions are SGML/Text
-            )
-            processed_docs.append(curr_extraction)
+        submission_year = EdgarFetcher._resolve_four_digit_year(two_digit_year)
 
-        return processed_docs
+        logger.debug(
+            f"[Edgar] Downloaded file for {ticker}, {form_type}, "
+            f"submission year: {submission_year}, order: {submission_order}"
+        )
+
+        return LocalEdgarDocument(
+            ticker=ticker,
+            submission_year=submission_year,
+            submission_order_for_the_year=int(submission_order),
+            form_type=form_type,
+            file_path_raw=file_path,
+            file_path_ai_ready=None,
+            mime_type="text/plain",
+        )
+
+    @staticmethod
+    def _resolve_four_digit_year(two_digit_year: str) -> int:
+        """Convert a 2-digit year string to 4 digits, handling rollover past 2068."""
+        parsed_year = datetime.strptime(two_digit_year, "%y").year
+        current_year = datetime.now().year
+        if parsed_year < (current_year - 50):
+            return parsed_year + 100
+        return parsed_year
