@@ -101,7 +101,7 @@ class ManagedAgentAnalyser(BaseAnalyser):
             TimeoutError: If the agent does not complete within *max_wait_minutes*.
         """
         model = self._get_model()
-        logger.info("Deploying managed AI agent via Interactions API...")
+        logger.info(f"Deploying managed AI agent via Interactions API for {label}...")
 
         context = self._build_context()
         full_input = f"{agent_spec}\n\n{context}"
@@ -110,7 +110,7 @@ class ManagedAgentAnalyser(BaseAnalyser):
             self.client.interactions.create, agent=model, input=full_input, background=True
         )
         interaction_id = interaction.id
-        logger.info(f"[Interaction ID: {interaction_id}] - Agent dispatched. Entering polling loop...")
+        logger.info(f"[Interaction ID: {interaction_id}] - Agent for {label} dispatched. Entering polling loop...")
 
         max_iterations = (max_wait_minutes * 60) // polling_interval
         for iteration in range(max_iterations):
