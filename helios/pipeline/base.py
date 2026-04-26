@@ -81,6 +81,8 @@ class BaseAnalyser(ABC):
 
     def _is_cached(self, output_path: str) -> bool:
         """Return True (and log) if the output already exists and re-run is not forced."""
+        logger.debug(f"[{type(self).__name__}] Checking cache at '{output_path}' (force_recompute={self.force_recompute})")
+
         if not self.force_recompute and os.path.exists(output_path):
             logger.info(f"[{type(self).__name__}] Output already exists at {output_path}. Skipping.")
             return True

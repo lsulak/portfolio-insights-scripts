@@ -11,7 +11,7 @@
 - **The Capital Cycle & Credit Reality:** Are competitors aggressively expanding capacity or consolidating? **Credit Reality:** You MUST search for the current Credit Default Swap (CDS) spreads or the yield-to-maturity on the most recently issued corporate bonds for `{{ TICKER }}` and its top peer. Compare this against the Risk-Free Rate to identify systemic credit distress.
 - **Value Chain & Pricing Power:** Map the leverage in the system. Who holds the pricing power—suppliers, manufacturers, or end-distributors?
 - **Competitive Landscape & Rivalry:** Identify the top 5 direct competitors and then provide:
-  - **Common Quantitative Data:** For these 5 companies as well as for company `{{ TICKER }}`, gather the current market capitalization, current stock price, and current relative valuation metrics **P/S, P/E, and P/FCF** (do NOT calculate it by yourself), along with the average of the last 3 years of revenue growth and operating margins.
+  - **Common Quantitative Data:** For these 5 companies as well as for company `{{ TICKER }}`, gather the current market capitalization (MUST be in millions), current stock price, and current relative valuation metrics **P/S, P/E, and P/FCF** (do NOT calculate it by yourself), along with the average of the last 3 years of revenue growth and operating margins.
   - **The Sales-to-Capital Extraction:** You MUST extract the industry average Sales-to-Capital Ratio (e.g., from Aswath Damodaran's published datasets or generic industry reports). Do NOT attempt to calculate this historically for the competitors yourself.
 - **Sector Asymmetrical Risks:** Identify existential substitution threats (e.g. asymmetrical technological shift) or regulatory choke points.
 

@@ -13,8 +13,8 @@ class SectorAnalyser(ManagedAgentAnalyser):
     AGENT_SPEC_FILE = "sector_analysis.md"
 
     def __init__(self, **kwargs):
+        kwargs.update({"force_recompute": EXTRACTION_FORCE.sector})
         super().__init__(**kwargs)
-        self.force_recompute = self.force_recompute or EXTRACTION_FORCE.sector
 
     def _get_model(self) -> str:
         return GEMINI.sector_analysis_model

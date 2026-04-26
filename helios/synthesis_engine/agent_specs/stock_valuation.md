@@ -58,6 +58,7 @@ State the Implied CAGR vs. Historical CAGR.
 
 (Note that the values here are placeholders that must be substituted with real values.)
 
+```json
 {
   "dcf_parameters": {
     "base_year_revenue": 0.0,
@@ -75,3 +76,4 @@ State the Implied CAGR vs. Historical CAGR.
     "integrity_haircut_percent": 0.0 
   }
 }
+```

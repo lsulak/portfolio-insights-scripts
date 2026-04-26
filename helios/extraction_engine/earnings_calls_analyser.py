@@ -14,8 +14,9 @@ class EarningsCallAnalyser(ManagedAgentAnalyser):
     AGENT_SPEC_FILE = "earnings_calls_analysis.md"
 
     def __init__(self, **kwargs):
+        kwargs.update({"force_recompute": EXTRACTION_FORCE.earnings})
+
         super().__init__(**kwargs)
-        self.force_recompute = self.force_recompute or EXTRACTION_FORCE.earnings
 
     def _get_model(self) -> str:
         return GEMINI.earnings_call_analysis_model

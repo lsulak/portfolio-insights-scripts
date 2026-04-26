@@ -13,8 +13,8 @@ class MarketAnalyser(ManagedAgentAnalyser):
     AGENT_SPEC_FILE = "market_analysis.md"
 
     def __init__(self, **kwargs):
+        kwargs.update({"force_recompute": EXTRACTION_FORCE.market})
         super().__init__(**kwargs)
-        self.force_recompute = self.force_recompute or EXTRACTION_FORCE.market
 
     def _get_model(self) -> str:
         return GEMINI.market_analysis_model

@@ -32,7 +32,7 @@ class PreparedEdgarDocument:
     file_path_ai_ready: str
     ai_file: AIHostedFile | None = field(default=None, repr=False)
 
-    def to_inline_request(self, temperature: float, response_mime_type: str) -> dict:
+    def to_inline_request(self, temperature: float, response_mime_type: str) -> dict:  # todo batch - not used?
         """Build the inline Batch API request dict for this document."""
         if self.ai_file is None:
             raise ValueError("ai_file must be set before building a batch request")

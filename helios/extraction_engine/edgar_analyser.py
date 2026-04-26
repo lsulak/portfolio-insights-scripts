@@ -45,11 +45,12 @@ class EdgarExtractionPipeline(BaseAnalyser):
         ticker: str,
         force_recompute: bool = False,
     ):
-        super().__init__(output_base_dir, ticker, force_recompute)
+        self.force_recompute = force_recompute or EXTRACTION_FORCE.edgar
+
+        super().__init__(output_base_dir, ticker, self.force_recompute)
         self._client = client
         self._file_manager = file_manager
-        self.force_recompute = self.force_recompute or EXTRACTION_FORCE.edgar
-
+        
         ticker_dir = os.path.join(output_base_dir, ticker)
         self._dir_raw = os.path.join(ticker_dir, OutputDir.EDGAR_RAW)
         self._dir_minified = os.path.join(ticker_dir, OutputDir.EDGAR_MINIFIED)
@@ -68,9 +69,9 @@ class EdgarExtractionPipeline(BaseAnalyser):
 
         self._ensure_directories()
 
-        if not self.force_resummarize and not self._is_dir_empty(self._dir_raw):
+        if not self.force_recompute and not self._is_dir_empty(self._dir_raw):
             logger.info(
-                f"Raw EDGAR data directory {self._dir_raw} is not empty or force_resummarize is False. "
+                f"Raw EDGAR data directory {self._dir_raw} is not empty or force_recompute is False. "
                 f"Skipping fetching and summarization."
             )
             return
@@ -93,7 +94,7 @@ class EdgarExtractionPipeline(BaseAnalyser):
 
         async def _bounded_summarize(doc, spec_template, is_most_recent):
             async with semaphore:
-                await summarizer.summarize(doc, spec_template, is_most_recent, self.force_resummarize)
+                await summarizer.summarize(doc, spec_template, is_most_recent, self.force_recompute)
 
         await asyncio.gather(*(
             _bounded_summarize(doc, spec_template, is_most_recent)
