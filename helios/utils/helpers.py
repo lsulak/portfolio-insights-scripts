@@ -13,13 +13,13 @@ def setup_logging(log_dir: str) -> None:
     os.makedirs(log_dir, exist_ok=True)
 
     log_file = os.path.join(log_dir, "__main__.log")
-    rotating_handler = RotatingFileHandler(log_file, maxBytes=1000 * 1024, backupCount=10)  # 1 MB
+    rotating_handler = RotatingFileHandler(log_file, maxBytes=1000 * 1024, backupCount=30)  # 1 MB
 
     console_handler = logging.StreamHandler(sys.stdout)
 
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] (%(filename)s:%(lineno)d): %(message)s",
+        format="%(asctime)s [%(levelname)s] %(message)s (%(filename)s:%(lineno)d)",
         handlers=[rotating_handler, console_handler],
         force=True,
     )

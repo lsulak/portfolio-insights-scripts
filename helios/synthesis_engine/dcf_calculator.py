@@ -122,14 +122,41 @@ class DCFCalculator(BaseAnalyser):
         s2c = dcf_params.get("sales_to_capital_ratio", _DEFAULT_SALES_TO_CAPITAL)
         dcf_params["sales_to_capital_ratio"] = s2c if s2c and s2c > 0 else _DEFAULT_SALES_TO_CAPITAL
 
+        # Clamp integrity_haircut_percent to [0, 1] — the agent spec emits a
+        # fraction (e.g. 0.10) but the field name may mislead the LLM into
+        # outputting a percentage (e.g. 10). Values > 1 are divided by 100.
+        ihp = dcf_params.get("integrity_haircut_percent", 0.0)
+        if ihp and ihp > 1:
+            ihp = ihp / 100
+        dcf_params["integrity_haircut_percent"] = max(0.0, min(ihp or 0.0, 1.0))
+
+        # Normalise shares_outstanding to the same unit as market_cap (millions).
+        # The LLM may emit absolute share count (e.g. 50_697_344) while
+        # market_cap is in millions. Derive the expected value from
+        # market_cap / stock_price and use it when the LLM value is off by > 10×.
+        mcap = dcf_params.get("market_cap", 0) # in millions
+        price = dcf_params.get("stock_price", 0)
+        shares = dcf_params.get("shares_outstanding", 0) # can be in millions or absolute (mostly absolute)
+        if mcap and price and shares:
+            expected_shares = mcap / price
+            ratio = shares / expected_shares
+            if ratio > 10 or ratio < 0.1:
+                logger.warning(
+                    "shares_outstanding (%.2f) deviates %.1f× from market_cap/stock_price (%.4f). "
+                    "Using derived value.",
+                    shares,
+                    ratio,
+                    expected_shares,
+                )
+                dcf_params["shares_outstanding"] = expected_shares
+
         # Strip any extra keys the LLM might have added
         valid_fields = {f.name for f in DCFParameters.__dataclass_fields__.values()}
         dcf_params = {k: v for k, v in dcf_params.items() if k in valid_fields}
 
         return DCFParameters(**dcf_params)
 
-    @staticmethod
-    def _calculate(params: DCFParameters) -> DCFResults:
+    def _calculate(self, params: DCFParameters) -> DCFResults:
         """Execute a deterministic 10-Year DCF based on Damodaran's First Principles.
 
         Two-stage model:
@@ -146,13 +173,13 @@ class DCFCalculator(BaseAnalyser):
         )
         logger.info("Base margin: %.4f", base_margin)
 
-        pvs, rev, fcff = DCFCalculator._stage_1(params, base_margin)
-        stage2_pvs, rev, fcff = DCFCalculator._stage_2(params, rev)
+        pvs, rev, _ = self._stage_1(params, base_margin)
+        stage2_pvs, rev, fcff = self._stage_2(params, rev)
         pvs.extend(stage2_pvs)
 
-        pv_terminal = DCFCalculator._terminal_value(params, fcff)
+        pv_terminal = self._terminal_value(params, fcff)
 
-        return DCFCalculator._assemble_results(params, pvs, pv_terminal)
+        return self._assemble_results(params, pvs, pv_terminal)
 
     @staticmethod
     def _stage_1(params: DCFParameters, base_margin: float) -> tuple[list[float], float, float]:
@@ -222,7 +249,12 @@ class DCFCalculator(BaseAnalyser):
         """Convert raw present values into the final DCFResults."""
         firm_value = sum(present_values) + pv_terminal
         equity_value = firm_value - params.total_debt + params.cash_and_cash_equivalents_and_short_term_investments
-        equity_value_adjusted = equity_value * (1 - params.integrity_haircut_percent)
+        # Apply governance haircut only when equity is positive — a penalty
+        # should never make a negative equity value less negative.
+        if equity_value > 0 and params.integrity_haircut_percent > 0:
+            equity_value_adjusted = equity_value * (1 - params.integrity_haircut_percent)
+        else:
+            equity_value_adjusted = equity_value
 
         logger.info(
             "Firm value: %.2f, equity value (post-haircut): %.2f",
