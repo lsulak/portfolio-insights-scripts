@@ -425,7 +425,7 @@ def process(input_directory: str, output_db_location: str) -> None:
     input_data_by_section = aggregate_input_files(input_directory)
     semi_processed_data = preprocess_data(input_data_by_section)
 
-    with sqlite3.connect(output_db_location) as connection:
+    with sqlite3.connect(output_db_location, autocommit=True) as connection:
         try:
             load_deposits_and_withdrawals_to_db(connection, semi_processed_data["Deposits & Withdrawals"])
 

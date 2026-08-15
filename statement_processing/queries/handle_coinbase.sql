@@ -1,4 +1,4 @@
--- name: insert_coinbase
+-- name: insert_coinbase!
 INSERT INTO transactions
      SELECT id,
          DATE(Timestamp) AS Date,
@@ -26,7 +26,7 @@ INSERT INTO transactions
      -- is all allowed. But duplicates are not allowed.
      ON CONFLICT(id) DO NOTHING
 
--- name: insert_coinbase_deposits_and_withdrawals
+-- name: insert_coinbase_deposits_and_withdrawals!
 INSERT INTO deposits_and_withdrawals
      SELECT id,
             DATE(Timestamp) AS Date,
