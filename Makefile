@@ -16,13 +16,13 @@ install:
 	pip install -r requirements.txt
 
 black:
-	black --line-length 99 --exclude="pelican-plugins|themes|.venv" .
+	black --line-length 119 --exclude="pelican-plugins|themes|.venv" .
 
 black-ci:
 	echo -e "\n# Diff for each file:"; \
-	black --line-length 99 --exclude=".venv" --diff .; \
+	black --line-length 119 --exclude=".venv" --diff .; \
 	echo -e "\n# Status:"; \
-	black --line-length 99 --exclude=".venv" --check .
+	black --line-length 119 --exclude=".venv" --check .
 
 flake8:
 	flake8 --extend-exclude .venv,build

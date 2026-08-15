@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """This module implements helper SQLite database utilities used in this project."""
+
 import os
 import re
 import sqlite3
@@ -78,7 +79,9 @@ def _custom_hash_func(row: pd.core.series.Series, columns_to_ignore: Iterable[st
     return md5(row_as_str.encode("utf-8")).hexdigest()
 
 
-def create_id_for_each_row(input_df: pd.DataFrame, id_column_name: str = "id", columns_to_ignore: Iterable[str] = None):
+def create_id_for_each_row(
+    input_df: pd.DataFrame, id_column_name: str = "id", columns_to_ignore: Iterable[str] = None
+):
     """This function adds a new column into the input DataFrame. This column
     is meant to represent the unique identification of data in each row.
 

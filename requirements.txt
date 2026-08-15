@@ -11,3 +11,10 @@ aiosql
 yfinance
 numpy
 requests
+
+# HELIOS related
+sec-edgar-downloader
+google-genai
+tenacity
+python-dotenv
+jinja2

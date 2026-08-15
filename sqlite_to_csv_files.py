@@ -3,6 +3,7 @@
 """This is a helper script that just exports all tables in the input SQLite DB into a list of CSV
 files for easier end-user consumption.
 """
+
 import argparse
 import logging.config
 import os
@@ -39,7 +40,8 @@ if __name__ == "__main__":
     logging.config.dictConfig(LOGGING_CONF)
 
     output_dir = os.path.dirname(cli_args.input_database)
-    for file_to_remove in glob(f"{output_dir}/*.csv"):
-        print(file_to_remove)
+    if cli_args.overwrite:
+        for file_to_remove in glob(f"{output_dir}/*.csv"):
+            os.remove(file_to_remove)
 
     sqlite_tables_to_csv_files(cli_args.input_database, output_dir)

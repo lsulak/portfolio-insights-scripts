@@ -1,19 +1,26 @@
 # Portfolio Insights Scripts
 
-This repository stores scripts that I use for my personal finance needs - they are
-part of a bigger project that I started in 2021 and is currently implemented on
-Google Sheets.
+This repository stores scripts for personal finance analysis and SEC filing extraction.
 
 ## Run Locally
 
-If you want to run the script locally, including installation
+If you want to run the scripts locally, including installation
 of all dependencies, you can create and activate virtual env and install
 all necessary libraries: `./setup.sh`
 
 Then run one of the main CLI scripts on the top-directory level.
 Each of them implements parameter `--help`.
 
-## Brokerage Report Parsing
+## 🚀 HELIOS Extraction Pipeline
+
+HELIOS is an AI-powered pipeline that extracts structured financial data from SEC filings (10-K, 10-Q, 8-K, DEF 14A, Form 4), market and sector data using Google's Gemini API performs summaries
+and analysis from long-term investor's point ot view.
+
+## 📊 Brokerage Report Parsing
+
+This repository stores scripts that I use for my personal finance needs - they are
+part of a bigger project that I started in 2021 and is currently implemented on
+Google Sheets.
 
 The goal of most of the scripts in this repository is to process and reshape the reports exported
 from a brokerage accounts I use into a consumable way that could be imported into the main tool,
@@ -94,19 +101,19 @@ See a few screenshots of the whole project below.
 
 **An example of net worth assumptions, tracking, and future projection**
 
-<img src="screens/net_worth_future_projection.png" width="800">
+<img src="docs/net_worth_future_projection.png" width="800">
 
 ---
 
 **An example of securities & crypto tracking**
 
-<img src="screens/securities_and_crypto.png" width="800">
+<img src="docs/securities_and_crypto.png" width="800">
 
 ---
 
 **Most of the calculations are driven by a transaction log**
 
-<img src="screens/transactions.png" width="800">
+<img src="docs/transactions.png" width="800">
 
 ---
 

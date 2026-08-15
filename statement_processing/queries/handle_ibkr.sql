@@ -1,4 +1,4 @@
--- name: insert_ibkr_deposits_and_withdrawals
+-- name: insert_ibkr_deposits_and_withdrawals!
 INSERT INTO deposits_and_withdrawals
      SELECT id,
             SettleDate AS Date,
@@ -26,7 +26,7 @@ INSERT INTO deposits_and_withdrawals
         ON CONFLICT(id) DO NOTHING
 
 
--- name: insert_ibkr_forex
+-- name: insert_ibkr_forex!
 INSERT INTO forex
      SELECT id,
             DATE(REPLACE(`Date/Time`, ',', '')) AS Date,
@@ -50,7 +50,7 @@ INSERT INTO forex
         ON CONFLICT(id) DO NOTHING
 
 
--- name: insert_ibkr_special_fees
+-- name: insert_ibkr_special_fees!
 INSERT INTO transactions
    SELECT DISTINCT
           -- This is ok, even if the unique ID is not the same for records groupped by Date, Currency, and Description,
@@ -78,7 +78,7 @@ INSERT INTO transactions
        ON CONFLICT(id) DO NOTHING
 
 
--- name: insert_ibkr_transactions_without_special_fees
+-- name: insert_ibkr_transactions_without_special_fees!
 WITH records_to_insert AS (
 
      SELECT DISTINCT
@@ -131,7 +131,7 @@ SELECT *
 GROUP BY Currency, Date, Item, PPU
 
 
--- name: insert_ibkr_transactions_with_special_fees
+-- name: insert_ibkr_transactions_with_special_fees!
 WITH records_to_insert AS (
 
      SELECT DISTINCT
@@ -197,7 +197,7 @@ SELECT *
 GROUP BY Currency, Date, Item, PPU
 
 
--- name: insert_dividend_records_without_taxes
+-- name: insert_dividend_records_without_taxes!
 WITH records_to_insert AS (
 
         SELECT DISTINCT
@@ -231,7 +231,7 @@ SELECT *
     ON CONFLICT(id) DO NOTHING
 
 
--- name: insert_dividend_records_with_taxes
+-- name: insert_dividend_records_with_taxes!
 WITH records_to_insert AS (
 
         SELECT DISTINCT

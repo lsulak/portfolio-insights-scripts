@@ -1,4 +1,4 @@
--- name: insert_coinbase_pro_deposits_and_withdrawals
+-- name: insert_coinbase_pro_deposits_and_withdrawals!
 INSERT INTO deposits_and_withdrawals
      SELECT id,
             DATE(time) AS Date,
@@ -19,7 +19,7 @@ INSERT INTO deposits_and_withdrawals
     ON CONFLICT(id) DO NOTHING
 
 
--- name: insert_coinbase_pro_transactions
+-- name: insert_coinbase_pro_transactions!
 INSERT INTO transactions
      SELECT id,
              DATE(time) AS Date,

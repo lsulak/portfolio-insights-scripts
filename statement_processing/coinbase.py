@@ -2,6 +2,7 @@
 """Coinbase statement processing. It requires a directory of CSV reports exported from the
 platform and it outputs easy-to-consume data into SQLite database.
 """
+
 import logging
 import re
 import sqlite3

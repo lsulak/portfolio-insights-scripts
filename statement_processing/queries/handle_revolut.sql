@@ -41,7 +41,7 @@ SELECT id,
  WHERE Type == 'DIVIDEND'
 
 
--- name: insert_revolut_fees
+-- name: insert_revolut_fees!
 INSERT INTO transactions
    SELECT id,
           DATE(Date) AS Date,
@@ -85,7 +85,7 @@ INSERT INTO transactions
     WHERE Type == 'STOCK SPLIT'
 
 
--- name: insert_revolut_transactions
+-- name: insert_revolut_transactions!
 INSERT INTO transactions
    SELECT id,
           Date,
